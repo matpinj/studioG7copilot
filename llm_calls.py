@@ -11,8 +11,8 @@ def generate_sql_query(dB_context: str, retrieved_descriptions: str, user_questi
                 "content":
                        f"""
                 You are a SQLite expert.
-                The database contains multiple tables, each corresponding to a different aspect of building cost. 
-                Each table row represents an individual instance of a building element of that type.
+                The database contains multiple tables, each corresponding to a different aspect of building information. 
+                There are 6 tables. Each table row represents an individual instance of a building information, about its spaces and residents.
 
                 # Context Information #
                 ## Database Schema: ## {dB_context}
@@ -52,10 +52,10 @@ def build_answer(sql_query: str, sql_result: str, user_question: str) -> str:
                         You have to answer a user question according to the SQL query and its result. Your goal is to answer in a concise and informative way, specifying the properties and tables that were relevant to create the answer.
                        
                         ### EXAMPLE ###
-                        User Question: What is the area of the largest slab?  
-                        SQL Query: SELECT GlobalId, Dimensions_Area FROM IfcSlab ORDER BY Dimensions_Area DESC LIMIT 1;  
-                        SQL Result: [('3qq_RRlZrFqhCIHFKokT7x', 207.1385920365226)]  
-                        Answer: I looked at the Dimensions_Area property of IfcSlab elements and found that the area of the largest slab (GlobalID: '3qq_RRlZrFqhCIHFKokT7x') is 207.13 m².
+                        User Question: What is total list of activities on level 1?  
+                        SQL Query: SELECT activity_space, from column levels only rows containing 1; same rows for activity column.
+                        SQL Result: [(Flexible Space, Creative Corridor,  Storage & Technical Space,Sitting,  Sunbath,  Healing Garden,  Sports,  Flexible Space,  Urban Agriculture Garden )]  
+                        Answer: I looked at the activity_space property of level 1 and found that activites are: Flexible Space, Creative Corridor,  Storage & Technical Space,Sitting,  Sunbath,  Healing Garden,  Sports,  Flexible Space,  Urban Agriculture Garden.
                 """,
             },
             {

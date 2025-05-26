@@ -1,0 +1,20 @@
+Level 1:
+  Matching activities: Creative Corridor, Flexible Space, Green Corridor, Healing Garden, Offline Retreat, Sitting, Sports, Storage & Technical Space, Sunbath, Urban Agriculture Garden
+  Not possible activities: Community Pool/BBQ, Outdoor Cinema/Event Space, Outdoor Meeting Room, Playground, Viewpoint
+
+Level 2:
+  Matching activities: Creative Corridor, Flexible Space, Healing Garden, Offline Retreat, Sitting, Sports, Storage & Technical Space, Sunbath, Viewpoint
+  Not possible activities: Community Pool/BBQ, Green Corridor, Outdoor Cinema/Event Space, Outdoor Meeting Room
+
+Level 3:
+  Matching activities: Creative Corridor, Flexible Space, Healing Garden, Offline Retreat, Sitting, Sports, Sunbath, Viewpoint
+  Not possible activities: Community Pool/BBQ, Green Corridor, Outdoor Cinema/Event Space, Outdoor Meeting Room, Playground
+
+Level 4:
+  Matching activities: Sunbath, Urban Agriculture Garden
+  Not possible activities: Community Pool/BBQ, Creative Corridor, Flexible Space, Healing Garden, Outdoor Cinema/Event Space, Outdoor Meeting Room, Playground, Sports, Storage & Technical Space, Viewpoint
+
+Level building_total:
+  Matching activities: Creative Corridor, Flexible Space, Green Corridor, Healing Garden, Offline Retreat, Sitting, Sports, Storage & Technical Space, Sunbath, Urban Agriculture Garden, Viewpoint
+  Not possible activities: Community Pool/BBQ, Outdoor Cinema/Event Space, Outdoor Meeting Room, Playground
+

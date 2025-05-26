@@ -1,33 +1,32 @@
-# This script runs locally (w/LM Studio server) and an embedding model loaded.
 import sys
 sys.path.insert(0, 'C:\\Users\\Matea\\Documents\\IAAC\\3\\studio\\SQL\\LLM-SQL-Retrieval')
 from server.config import *
 import json
 import os
-import re 
+import re
 
-
-document_to_embed = "knowledge\\table_descriptions.txt"
+document_to_embed = "knowledge\\compare_results.txt"
 
 def get_embedding(text, model=embedding_model):
-   text = text.replace("\n", " ")
-   return local_client.embeddings.create(input = [text], model=model).data[0].embedding
+    text = text.replace("\n", " ")
+    return local_client.embeddings.create(input=[text], model=model).data[0].embedding
 
 # Read the text document
 with open(document_to_embed, 'r', encoding='utf-8', errors='ignore') as infile:
     text_file = infile.read()
 
-# A new strategy for chunking, parsing the txt file with regex
-pattern = r"Table:\s*(.*?)\s*Description:\s*(.*?)(?=Table:|\Z)"
+# Chunk by "Level X:" or "Level building_total:"
+pattern = r"Level\s+(.+?):\n\s+Matching activities: (.*?)\n\s+Not possible activities: (.*?)\n"
 matches = re.findall(pattern, text_file, re.DOTALL)
 
 chunks = []
-for table_name, description in matches:
+for level, matching, not_possible in matches:
+    content = f"Level {level.strip()}:\nMatching activities: {matching.strip()}\nNot possible activities: {not_possible.strip()}"
     chunks.append({
-        "name": table_name.strip(),
-        "content": description.strip()
+        "name": f"level_{level.strip()}",
+        "content": content
     })
-        
+
 # Create the embeddings
 embeddings = []
 for i, chunk in enumerate(chunks):
@@ -41,9 +40,9 @@ for i, chunk in enumerate(chunks):
 
 # Save the embeddings to a json file
 output_filename = os.path.splitext(document_to_embed)[0]
-output_path = f"{output_filename}.json"
+output_path = f"{output_filename}_compare.json"
 
 with open(output_path, 'w', encoding='utf-8') as outfile:
     json.dump(embeddings, outfile, indent=2, ensure_ascii=False)
 
-print(f"Finished vectorizing. Created {document_to_embed}")
+print(f"Finished vectorizing. Created {output_path}")

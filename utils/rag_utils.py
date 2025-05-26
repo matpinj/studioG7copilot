@@ -1,3 +1,5 @@
+import sys
+sys.path.insert(0, 'C:\\Users\\Matea\\Documents\\IAAC\\3\\studio\\SQL\\LLM-SQL-Retrieval')
 import numpy as np
 import json
 from server.config import *

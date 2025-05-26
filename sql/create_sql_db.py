@@ -1,63 +1,34 @@
 import sqlite3
 import pandas as pd
 
-
-excel_file_path = 'sql\cost_data.xlsx'
-conn = sqlite3.connect('sql\cost-database.db')
+excel_file_path = 'sql/example.xlsx'
+conn = sqlite3.connect('sql/example.db')
 cursor = conn.cursor()
 
-
 def drop_all_tables(cursor):
-    # Query to get all table names in the database
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
     tables = cursor.fetchall()
     
-    # Drop each table
     for table_name in tables:
         cursor.execute(f"DROP TABLE IF EXISTS {table_name[0]}")
 
 drop_all_tables(cursor)
+conn.commit()
 print("Existing tables have been dropped.")
 
-# Load the Excel file, get a dictionary of DataFrames, one per sheet
+# Load all sheets into a dictionary of DataFrames
 sheets_dict = pd.read_excel(excel_file_path, sheet_name=None)
 
-# Iterate over each sheet in the Excel file
 for sheet_name, df in sheets_dict.items():
-    # Get column names and types from the DataFrame
-    columns =df.columns.str.strip()
-    types = df.dtypes
+    # Optional: Strip column names whitespace just in case
+    df.columns = df.columns.str.strip()
+    
+    # Insert DataFrame into SQLite table
+    # Use if_exists='replace' to recreate table with updated columns and schema
+    df.to_sql(sheet_name, conn, if_exists='replace', index=False)
+    
+    print(f"Data from sheet '{sheet_name}' inserted into table '{sheet_name}' (table replaced).")
 
-    # Create a SQL command to create a table dynamically
-    column_defs = []
-    for col, dtype in zip(columns, types):
-        if pd.api.types.is_integer_dtype(dtype):
-            col_type = 'INTEGER'
-        elif pd.api.types.is_float_dtype(dtype):
-            col_type = 'REAL'
-        else:
-            col_type = 'TEXT'
-        column_defs.append(f'"{col}" {col_type}')
-
-    column_defs_str = ', '.join(column_defs)
-    create_table_sql = f'CREATE TABLE IF NOT EXISTS {sheet_name} ({column_defs_str})'
-
-    # Execute the SQL command to create the table
-    cursor.execute(create_table_sql)
-
-    # Insert DataFrame into SQLite database
-    df.to_sql(sheet_name, conn, if_exists='append', index=False)
-
-    print(f"Data from sheet '{sheet_name}' inserted into table '{sheet_name}'.")
-
-# Verify data
-# print("Verifying...")
-# for sheet_name in sheets_dict.keys():
-#     cursor.execute(f'SELECT * FROM {sheet_name}')
-#     rows = cursor.fetchall()
-#     print(f"\nData from table '{sheet_name}':")
-#     for row in rows:
-#         print(row)
-
-# Close the connection
+# Close the connection properly
 conn.close()
+print("Database connection closed.")
