@@ -1,6 +1,9 @@
 from server.config import *
 import re
 
+
+#comment comment 
+
 # Create a SQL query from user question
 def generate_sql_query(dB_context: str, retrieved_descriptions: str, user_question: str) -> str:
     response = client.chat.completions.create(
