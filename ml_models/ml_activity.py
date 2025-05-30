@@ -4,10 +4,10 @@ import pickle
 import tensorflow as tf
 
 # --- File paths ---
-INPUT_CSV = "ml_models\\activity_space_ml.csv"
-OUTPUT_CSV = "ml_models\\threshold_predictions.csv"
-SCALER_PATH = "ml_models\\scaler_ann_2405_01.pkl"
-MODEL_PATH = "ml_models\\annmodel_2405_01.keras"
+INPUT_CSV = "building_data\geometry_data.csv"
+OUTPUT_CSV = "ml_models/threshold_predictions.csv"
+SCALER_PATH = "ml_models/scaler_ann_2405_01.pkl"
+MODEL_PATH = "ml_models/annmodel_2405_01.keras"
 
 # --- Load and clean CSV ---
 df = pd.read_csv(INPUT_CSV)
@@ -31,8 +31,8 @@ features = [
 # Drop rows with missing values in those columns
 df = df.dropna(subset=features)
 
-# --- Feature extraction (use DataFrame to avoid warning) ---
-X = df[features]  # ✅ keep as DataFrame instead of using .values
+# --- Feature extraction ---
+X = df[features].values
 
 # Load scaler and scale input
 with open(SCALER_PATH, 'rb') as f:
@@ -62,13 +62,16 @@ for row in binary_preds:
     activities = [activity_labels[i] for i, val in enumerate(row) if val == 1]
     decoded_preds.append(activities)
 
+
+# STEP 8: Save predictions to CSV
+# Ensure the output directory exists                
 # Add O1, O2, O3... keys as the ID column
 df["id"] = [f"O{i+1}" for i in range(len(df))]
 
 # Move 'id' to the front for readability (optional)
 df = df[["id"] + [col for col in df.columns if col != "id"]]
 
-# Add predictions to CSV
+# --- Output to CSV ---
 df["predicted_activities"] = decoded_preds
 df.to_csv(OUTPUT_CSV, index=False)
 print(f"✅ Saved predictions to {OUTPUT_CSV}")

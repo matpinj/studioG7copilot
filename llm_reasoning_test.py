@@ -189,11 +189,7 @@ def generate_llm_assignments(output_path="llm_assignments.json"):
     pd.DataFrame(summary).to_csv("llm_activity_assignments.csv", index=False)
     logging.info("CSV summary saved to llm_activity_assignments.csv")
 
-#THIS CODE GIVES AUTO ACTIVITIES WITH EXPLANATIONS AND WRITES TO CSV
-#region
-
-
-# 
+##THIS CODE GIVES AUTO ACTIVITIES WITH EXPLANATIONS AND WRITES TO CSV
 # logging.basicConfig(level=logging.INFO)
 
 # EXPLANATION_MODE = True # Set to True only if you want LLM to include reasoning
@@ -775,7 +771,12 @@ def generate_llm_assignments(output_path="llm_assignments.json"):
 # if __name__ == "__main__":
 #     generate_llm_assignments()
 
-#endregion
+
+
+
+
+
+
 
 def read_activity_weights(csv_path=r'C:\Users\nseda\Documents\GitHub\aia25-studio-agent\user_activiy_weights.csv'):
     """Reads CSV and returns a dict mapping profiles to activity weight dicts."""
@@ -788,52 +789,52 @@ def read_activity_weights(csv_path=r'C:\Users\nseda\Documents\GitHub\aia25-studi
             profile_map[profile] = weights
     return profile_map
 
-# def assign_activity(message, user_profile="young_entrepreneurs"):
-#     weights_map = read_activity_weights()
-#     weights = weights_map.get(user_profile, {})
+def assign_activity(message, user_profile="young_entrepreneurs"):
+    weights_map = read_activity_weights()
+    weights = weights_map.get(user_profile, {})
 
-#     # Format the weights as a readable string for LLM
-#     weights_text = ", ".join([f"{k}: {v}" for k, v in weights.items()])
+    # Format the weights as a readable string for LLM
+    weights_text = ", ".join([f"{k}: {v}" for k, v in weights.items()])
 
-#     # Construct full user input message
-#     full_message = f"""
-#     USER PROFILE: {user_profile}
-#     ACTIVITY WEIGHTS: {weights_text}
+    # Construct full user input message
+    full_message = f"""
+    USER PROFILE: {user_profile}
+    ACTIVITY WEIGHTS: {weights_text}
 
-#     USER REQUEST:
-#     {message}
-#     """
+    USER REQUEST:
+    {message}
+    """
 
-#     # Send to LLM
-#     response = client.chat.completions.create(
-#         model=completion_model,
-#         messages=[
-#             {
-#                 "role": "system",
-#                 "content": """
-# Below I describe how you need to assign activities based on user input:
+    # Send to LLM
+    response = client.chat.completions.create(
+        model=completion_model,
+        messages=[
+            {
+                "role": "system",
+                "content": """
+Below I describe how you need to assign activities based on user input:
 
-# - **Possible activities**:
-# Sitting, Offline Retreat, Sunbath, Healing Garden, Playground, Sports, Outdoor Cinema/Event Space, Community Pool/BBQ, Flexible Space, Creative Corridor, Outdoor Meeting Room, Green Corridor, Biodiversity balcony, Urban Agriculture Garden, Viewpoint, Storage & Technical Space
+- **Possible activities**:
+Sitting, Offline Retreat, Sunbath, Healing Garden, Playground, Sports, Outdoor Cinema/Event Space, Community Pool/BBQ, Flexible Space, Creative Corridor, Outdoor Meeting Room, Green Corridor, Biodiversity balcony, Urban Agriculture Garden, Viewpoint, Storage & Technical Space
 
-# ### Your task:
-# Based on a user's design request, profile, and activity weights, assign **one activity** and explain your reasoning.
+### Your task:
+Based on a user's design request, profile, and activity weights, assign **one activity** and explain your reasoning.
 
-# ### Format your response like this:
-# {
-#   "parameters": {
-#     "activity": "Flexible Space"
-#   },
-#   "reasoning": "Explain your choice based on the weights and design intent."
-# }
+### Format your response like this:
+{
+  "parameters": {
+    "activity": "Flexible Space"
+  },
+  "reasoning": "Explain your choice based on the weights and design intent."
+}
 
-# Only return a valid JSON object. No markdown, no commentary.
-# """
-#             },
-#             {
-#                 "role": "user",
-#                 "content": full_message
-#             }
-#         ]
-#     )
-#     return response.choices[0].message.content
+Only return a valid JSON object. No markdown, no commentary.
+"""
+            },
+            {
+                "role": "user",
+                "content": full_message
+            }
+        ]
+    )
+    return response.choices[0].message.content
