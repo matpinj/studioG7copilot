@@ -16,17 +16,16 @@ Typical use: Analyze the distribution of apartment types and residents per build
 
 Table: activity_space
 Description: This table contains all activity spaces with their geometrical and environmental information as columns. Each row represents a unique activity space, including its spatial properties, environmental conditions, and possible activities. The most important columns are level (which level the activity space is on), area, and activity. The activity column lists one or more possible activities for that space.
-Columns: key, orientation, height, area, level, open_side, in_out, inc_rad, sun_h, wind_exp, utci, neigh_dist, usability, green_suitability, compactness, types touching, neighbours touching, bounding area ratio, core distance, cos(angle_in_radians), sin(angle_in_radians), edge count, longest edge length, privacy score, activity
+Columns: key, type, orientation, height, area, level, open_side, in_out, wind_exp, utci, neigh_dist, usability, green_suitability, compactness, types touching, neighbours touching, bounding area ratio, core distance, cos(angle_in_radians), sin(angle_in_radians), edge count, longest edge length, privacy score, activity
 Column meanings:
 key: Unique identifier for the activity space
+type: type of open space, based on area (e.g. balcony, terrace)
 orientation: Cardinal direction (e.g., N, SW, SE)
 height: Height of the space (meters)
 area: Area of the space (square meters)
-level: Building level where the space is located
+level: Building level/floor where the space is located
 open_side: Number of open sides
 in_out: Indicates if the space is indoor or outdoor
-inc_rad: Incoming radiation (W/m²)
-sun_h: Sun hours
 wind_exp: Wind exposure
 utci: Universal Thermal Climate Index
 neigh_dist: Distance to nearest neighbor
@@ -44,60 +43,24 @@ longest edge length: Length of the longest edge
 privacy score: Privacy score (0–1)
 activity: Possible activities in the space (e.g., Flexible Space, Creative Corridor, Sitting, Sunbath, Healing Garden, Sports, Urban Agriculture Garden, Storage & Technical Space, Biodiversity balcony, Viewpoint, etc.)
 Example rows:
-key: 1, orientation: N, height: 3, area: 18, level: 1, open_side: 1, in_out: outdoor, ..., activity: Flexible Space
-key: 3, orientation: SE, height: 3, area: 27, level: 1, open_side: 2, in_out: outdoor, ..., activity: Sitting, Sunbath, Healing Garden, Sports, Flexible Space, Urban Agriculture Garden
-key: 28, orientation: SW, height: 3, area: 216, level: 2, open_side: 2, in_out: outdoor, ..., activity: Urban Agriculture Garden
+key: O1, type: balcony, orientation: N, height: 3, area: 18, level: 1, open_side: 1, in_out: outdoor, ..., activity: Flexible Space
+key: O3, type: balcony, orientation: SE, height: 3, area: 27, level: 1, open_side: 2, in_out: outdoor, ..., activity: Sitting, Sunbath, Healing Garden, Sports, Flexible Space, Urban Agriculture Garden
+key: O28, type: terrace, orientation: SW, height: 3, area: 216, level: 2, open_side: 2, in_out: outdoor, ..., activity: Urban Agriculture Garden
 Typical use: Analyze the spatial and environmental characteristics of activity spaces, determine which activities are possible in each space, and support planning or assignment of activities based on space properties.
 
-Table: level1
-Description: This table provides data about people living on level 1, with each row representing a household.
-Columns: apartment_number1, household1, related_activity1
-apartment_number1: Unique identifier for each apartment on level 1.
-household1: The type or demographic of the household (e.g., gardeners, young_professionals, night_owls, expats, creatives, etc.).
-related_activity1: The preferred or assigned activity space or amenity for the household (e.g., Urban Agriculture Garden, Flexible Space, Creative Corridor, Healing Garden, Outdoor Cinema/Event Space, etc.).
+Table: personas_assigned
+Description: This table provides data about people living in the building, with each row representing one household.
+Columns: resident_key, resident_persona, level, age, tenant/owner
+resident_key: Unique identifier for each apartment in the building.
+resident_persona: The type of persons or demographic of the household (e.g., gardeners, young_professionals, night_owls, expats, creatives, etc.).
+resident_population: Number of people living in household (1, 3 or 5 people).
+level: Level/floor of the household in the building.
+age: Average age of people living in household.
+tenant/owner: Shows if residents of apartment are owners or they are temporary living as tenant.
 Example rows:
-apartment_number1: 1, household1: gardeners, related_activity1: Urban Agriculture Garden
-apartment_number1: 4, household1: young_professionals, related_activity1: Flexible Space
-apartment_number1: 12, household1: expats, related_activity1: Outdoor Cinema/Event Space
-apartment_number1: 19, household1: sporty_people, related_activity1: Community Pool/BBQ
-apartment_number1: 44, household1: young_entrepreneurs, related_activity1: Flexible Space
-Typical use: Find out which households live on level 1, their demographic type, and their preferred or assigned activity spaces. Useful for analyzing community needs, planning amenities, or understanding the distribution of household types and activities on this level.
-
-Table: level2
-Description: This table provides data about people living on level 2, with each row representing a household.
-Columns: apartment_number2, household2, related_activity2
-apartment_number2: Unique identifier for each apartment on level 2.
-household2: The type or demographic of the household (e.g., academics, young_professionals, expats, creatives, sporty_people, etc.).
-related_activity2: The preferred or assigned activity space or amenity for the household (e.g., Offline Retreat, Outdoor Meeting Room, Sitting, Creative Corridor, Healing Garden, Flexible Space, etc.).
-Example rows:
-apartment_number2: 1, household2: academics, related_activity2: Offline Retreat
-apartment_number2: 8, household2: young_professionals, related_activity2: Flexible Space
-apartment_number2: 13, household2: sporty_people, related_activity2: Community Pool/BBQ
-apartment_number2: 24, household2: musicians, related_activity2: Outdoor Cinema/Event Space
-apartment_number2: 41, household2: local_starters, related_activity2: Sitting
-Typical use: Find out which households live on level 2, their demographic type, and their preferred or assigned activity spaces. Useful for analyzing community needs, planning amenities, or understanding the distribution of household types and activities on this level.
-
-Table: level3
-Description: This table provides data about people living on level 3, with each row representing a household.
-Columns: apartment_number3, household3, related_activity3
-apartment_number3: Unique identifier for each apartment on level 3.
-household3: The type or demographic of the household (e.g., young_entrepreneurs, sporty_people, creatives, expats, etc.).
-related_activity3: The preferred or assigned activity space or amenity for the household (e.g., Sitting, Community Pool/BBQ, Outdoor Cinema/Event Space, Creative Corridor, Healing Garden, etc.).
-Example rows:
-apartment_number3: 1, household3: young_entrepreneurs, related_activity3: Sitting
-apartment_number3: 10, household3: expats, related_activity3: Community Pool/BBQ
-apartment_number3: 18, household3: active_later_living, related_activity3: Viewpoint
-apartment_number3: 25, household3: young_entrepreneurs, related_activity3: Healing Garden
-Typical use: Find out which households live on level 3, their demographic type, and their preferred or assigned activity spaces. Useful for analyzing community needs, planning amenities, or understanding the distribution of household types and activities on this level.
-
-Table: level4
-Description: This table provides data about people living on level 4, with each row representing a household.
-Columns: apartment_number4, household4, related_activity4
-apartment_number4: Unique identifier for each apartment on level 4.
-household4: The type or demographic of the household (e.g., young professionals, expats, academics, etc.).
-related_activity4: The preferred or assigned activity space or amenity for the household (e.g., Sunbath, Outdoor Meeting Room, Storage & Technical Space, Urban Agriculture Garden, etc.).
-Example rows:
-apartment_number4: 1, household4: young_professionals, related_activity4: Outdoor Meeting Room
-apartment_number4: 3, household4: active_later_living, related_activity4: Urban Agriculture Garden
-apartment_number4: 10, household4: expats, related_activity4: Healing Garden
-Typical use: Find out which households live on level 4, their demographic type, and their preferred or assigned activity spaces. Useful for analyzing community needs, planning amenities, or understanding the distribution of household types and activities on this level.
+resident_key: H1, resident_persona: young_professionals, resident_population: 1, level: 1, age: 51, tenant/owner: tenant
+resident_key: H12, resident_persona: musicians, resident_population: 1, level: 1, age: 21, tenant/owner: owner
+resident_key: H34, resident_persona: gardeners/food_lovers, resident_population: 3, level: 1, age: 22, tenant/owner: owner
+resident_key: H67, resident_persona: travelers/expats, resident_population: 1, level: 2, age: 57, tenant/owner: tenant
+resident_key: H80, resident_persona: diy_enthusiasts/creatives, resident_population: 1, level: 2, age: 34, tenant/owner: owner
+Typical use: Find out which households live on level 1,2 or X, their demographic type and number of people living in, their age, ownership. Useful for analyzing community needs, planning amenities, or understanding the distribution of household types and activities on this level.

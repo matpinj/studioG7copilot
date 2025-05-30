@@ -1,0 +1,42 @@
+id,type,orientation,area,level,open_side,in_out,compactness,types touching,neighbours touching,bounding area ratio,core distance,cos(angle_in_radians),sin(angle_in_radians),edge count,longest edge length,predicted_activities
+O1,0,7,9,1,1,1,16.0,2,2,1.0,12.369316655023605,-0.0712470499879097,0.997458699830735,4,3,"['Creative Corridor', 'Offline Retreat', 'Sitting', 'Storage & Technical Space', 'Sunbath']"
+O2,0,7,9,1,1,1,16.0,1,2,1.0,9.486833160988011,0.2095290887308734,0.9778024140774096,4,3,"['Creative Corridor', 'Sitting', 'Storage & Technical Space', 'Sunbath']"
+O3,2,7,18,1,1,1,18.0,1,3,1.0,5.408326700113896,-0.3939192985791676,0.919145030018058,4,6,"['Community Pool/BBQ', 'Flexible Space', 'Outdoor Meeting Room', 'Sitting', 'Sports', 'Storage & Technical Space', 'Sunbath', 'Urban Agriculture Garden']"
+O4,0,7,9,1,1,1,16.0,2,2,1.0,6.708204092844349,-0.6804510993672777,0.7327934916262993,4,3,"['Creative Corridor', 'Offline Retreat', 'Sitting', 'Storage & Technical Space', 'Sunbath']"
+O5,0,7,9,1,1,1,16.0,2,2,1.0,4.242640490514017,0.6178215519319036,0.7863183388224226,4,3,"['Creative Corridor', 'Offline Retreat', 'Sitting', 'Storage & Technical Space', 'Sunbath']"
+O6,0,7,9,1,1,1,16.0,2,2,1.0,15.297058735938696,-0.8050558373533682,0.5931990380498499,4,3,"['Creative Corridor', 'Offline Retreat', 'Sitting', 'Storage & Technical Space', 'Sunbath']"
+O7,0,6,9,1,2,1,16.0,1,1,1.0,2.99999978780528,0.805055837353368,0.59319903804985,4,3,"['Creative Corridor', 'Storage & Technical Space']"
+O8,2,3,36,1,2,1,25.0,1,2,0.67,11.472793710423412,0.8907618697082331,0.4544703416878737,6,9,"['Community Pool/BBQ', 'Flexible Space', 'Healing Garden', 'Outdoor Meeting Room', 'Sitting', 'Sports', 'Storage & Technical Space', 'Sunbath', 'Urban Agriculture Garden']"
+O9,2,6,27,1,2,1,21.33333333333333,2,2,0.75,21.54065924620762,-0.8769757398360186,0.4805346519649418,6,6,"['Storage & Technical Space', 'Urban Agriculture Garden']"
+O10,0,4,9,1,1,1,16.0,2,2,1.0,15.000000074639116,-0.9524241471993242,0.3047757271037836,4,3,"['Creative Corridor', 'Sitting', 'Sunbath']"
+O11,0,1,9,1,0,0,16.0,2,3,1.0,9.4868328509352,-0.9429903335828894,0.3328201177351378,4,3,"['Creative Corridor', 'Storage & Technical Space']"
+O12,0,1,9,1,1,1,16.0,2,2,1.0,10.816653653899396,0.9723873019805176,0.2333729524753241,4,3,"['Creative Corridor', 'Storage & Technical Space']"
+O13,0,1,9,1,1,1,16.0,2,2,1.0,4.24264049051401,-0.9931506043228762,0.1168412475673976,4,3,"['Creative Corridor', 'Storage & Technical Space']"
+O14,0,4,9,1,1,1,16.0,2,2,1.0,10.816653966423218,-0.9874406319167054,0.1579905011066726,4,3,"['Creative Corridor', 'Sitting', 'Sunbath']"
+O15,0,4,9,1,1,1,16.0,2,2,1.0,9.00000021219471,-1.0,1.2246467991473532e-16,4,3,"['Creative Corridor', 'Sitting', 'Sunbath']"
+O16,0,1,9,1,1,1,16.0,2,2,1.0,6.708203713258929,0.996815278536125,0.0797452222828906,4,3,"['Creative Corridor', 'Storage & Technical Space']"
+O17,0,1,9,1,1,1,16.0,2,2,1.0,4.2426405836359296,-0.9931506043228762,0.1168412475673976,4,3,"['Creative Corridor', 'Storage & Technical Space']"
+O18,0,1,9,1,0,0,16.0,3,3,1.0,9.486832975871364,-0.9429903335828894,0.3328201177351378,4,3,"['Creative Corridor', 'Storage & Technical Space']"
+O19,2,7,18,1,1,1,18.0,2,2,1.0,13.829316567681849,-0.8944271909999159,0.4472135954999581,4,6,"['Community Pool/BBQ', 'Flexible Space', 'Healing Garden', 'Outdoor Meeting Room', 'Sitting', 'Sports', 'Storage & Technical Space', 'Sunbath', 'Urban Agriculture Garden']"
+O20,0,7,9,1,1,1,16.0,1,2,1.0,18.24828778937701,-0.7592566023652965,0.6507913734559687,4,3,"['Creative Corridor', 'Sitting', 'Storage & Technical Space', 'Sunbath']"
+O21,0,7,9,1,1,1,16.0,1,2,1.0,12.36931706674179,-0.4472135954999579,0.8944271909999159,4,3,"['Creative Corridor', 'Sitting', 'Storage & Technical Space', 'Sunbath']"
+O22,0,7,9,1,1,1,16.0,1,2,1.0,4.2426404905140345,0.7592566023652967,0.6507913734559685,4,3,"['Creative Corridor', 'Offline Retreat', 'Sitting', 'Storage & Technical Space', 'Sunbath']"
+O23,0,2,9,1,2,0,16.0,2,2,1.0,3.000000212194686,0.3511234415883917,0.9363291775690444,4,3,"['Creative Corridor', 'Storage & Technical Space']"
+O24,0,1,9,1,1,1,16.0,2,2,1.0,6.708203772154406,0.996815278536125,0.0797452222828906,4,3,"['Creative Corridor', 'Storage & Technical Space']"
+O25,0,7,9,1,1,1,16.0,2,2,1.0,9.486832758376892,0.8778955729143844,0.4788521306805733,4,3,"['Creative Corridor', 'Offline Retreat', 'Sitting', 'Storage & Technical Space', 'Sunbath']"
+O26,0,7,9,1,1,1,16.0,2,2,1.0,12.727922257963124,0.9284766908852592,0.371390676354104,4,3,"['Creative Corridor', 'Offline Retreat', 'Sitting', 'Storage & Technical Space', 'Sunbath']"
+O27,0,1,9,1,1,1,16.0,2,2,1.0,10.816653763475667,0.9723873019805176,0.2333729524753241,4,3,"['Creative Corridor', 'Storage & Technical Space']"
+O28,0,4,9,1,1,1,16.0,2,2,1.0,15.000000179994538,-0.9524241471993242,0.3047757271037836,4,3,"['Creative Corridor', 'Sitting', 'Sunbath']"
+O29,0,5,9,1,2,1,16.0,2,2,1.0,10.81665403947406,-0.9874406319167054,0.1579905011066726,4,3,"['Creative Corridor', 'Offline Retreat', 'Sitting', 'Storage & Technical Space', 'Sunbath']"
+O30,0,0,9,1,1,0,16.0,2,2,1.0,13.416408018790564,0.904818702200994,0.4257970363298794,4,3,"['Creative Corridor', 'Storage & Technical Space']"
+O31,0,0,9,1,1,1,16.0,2,2,1.0,22.84731952682816,-0.5407575918565112,0.8411784750274741,4,3,"['Creative Corridor', 'Storage & Technical Space']"
+O32,2,0,18,1,1,1,18.0,1,2,1.0,22.299103083553863,-0.707106781688296,0.7071067806847992,4,6,['Storage & Technical Space']
+O33,1,2,45,1,2,1,28.8,2,2,0.83,18.62900964837745,0.89590311910605,0.4442494807830964,8,9,['Storage & Technical Space']
+O34,2,0,18,1,1,1,18.0,1,2,1.0,10.062306025884851,0.1414213564339947,0.9899494936330686,4,6,['Storage & Technical Space']
+O35,2,0,18,1,1,1,18.0,2,2,1.0,16.22498093613866,-0.2747211282578266,0.961523947537838,4,6,['Storage & Technical Space']
+O36,0,0,9,1,1,1,16.0,2,2,1.0,9.486832947598396,0.4472135960076914,0.8944271907460491,4,3,"['Creative Corridor', 'Storage & Technical Space']"
+O37,2,0,18,1,1,1,18.0,2,2,1.0,13.82931654828676,0.6507913739883829,0.7592566019089414,4,6,['Storage & Technical Space']
+O38,2,0,18,1,1,1,18.0,1,2,1.0,21.476731417355253,0.7893522177985617,0.6139406129720464,4,6,['Storage & Technical Space']
+O39,0,5,9,1,2,1,16.0,1,1,1.0,20.12461192463393,-0.9015230577477792,0.4327310670024679,4,3,"['Creative Corridor', 'Storage & Technical Space']"
+O40,0,0,9,1,1,1,16.0,2,2,1.0,21.000000036044817,-0.8050558377553971,0.5931990375042392,4,3,"['Creative Corridor', 'Storage & Technical Space']"
+O41,0,5,9,1,2,1,16.0,2,2,1.0,21.84032976079388,-0.8541985559421621,0.5199469463573423,4,3,"['Creative Corridor', 'Storage & Technical Space']"

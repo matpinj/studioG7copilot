@@ -1,0 +1,90 @@
+{
+  "young_professionals": {
+    "Flexible Space": 0.25,
+    "Creative Corridor": 0.20,
+    "Outdoor Meeting Room": 0.18,
+    "Outdoor Cinema/Event Space": 0.12,
+    "Community Pool/BBQ": 0.10,
+    "Sitting": 0.08,
+    "Sunbath": 0.07
+  },
+  "musicians": {
+    "Creative Corridor": 0.30,
+    "Outdoor Cinema/Event Space": 0.22,
+    "Flexible Space": 0.18,
+    "Sitting": 0.10,
+    "Offline Retreat": 0.08,
+    "Outdoor Meeting Room": 0.07,
+    "Viewpoint": 0.05
+  },
+  "academics": {
+    "Offline Retreat": 0.30,
+    "Outdoor Meeting Room": 0.22,
+    "Flexible Space": 0.18,
+    "Sitting": 0.10,
+    "Creative Corridor": 0.08,
+    "Viewpoint": 0.07,
+    "Healing Garden": 0.05
+  },
+  "gardeners/food_lovers": {
+    "Urban Agriculture Garden": 0.32,
+    "Healing Garden": 0.20,
+    "Biodiversity Balcony": 0.15,
+    "Green Corridor": 0.10,
+    "Sitting": 0.08,
+    "Offline Retreat": 0.07,
+    "Community Pool/BBQ": 0.08
+  },
+  "active_later_living": {
+    "Healing Garden": 0.22,
+    "Sitting": 0.20,
+    "Green Corridor": 0.18,
+    "Offline Retreat": 0.15,
+    "Sunbath": 0.10,
+    "Community Pool/BBQ": 0.08,
+    "Viewpoint": 0.07
+  },
+  "influencers": {
+    "Outdoor Cinema/Event Space": 0.25,
+    "Creative Corridor": 0.20,
+    "Viewpoint": 0.18,
+    "Flexible Space": 0.15,
+    "Community Pool/BBQ": 0.12,
+    "Sunbath": 0.10
+  },
+  "travelers/expats": {
+    "Flexible Space": 0.22,
+    "Community Pool/BBQ": 0.18,
+    "Outdoor Cinema/Event Space": 0.16,
+    "Sitting": 0.15,
+    "Urban Agriculture Garden": 0.10,
+    "Viewpoint": 0.10,
+    "Offline Retreat": 0.09
+  },
+  "sporties": {
+    "Playground, Sports": 0.40,
+    "Community Pool/BBQ": 0.20,
+    "Sunbath": 0.15,
+    "Sitting": 0.10,
+    "Viewpoint": 0.05,
+    "Flexible Space": 0.05,
+    "Healing Garden": 0.05
+  },
+  "night_owls": {
+    "Outdoor Cinema/Event Space": 0.30,
+    "Creative Corridor": 0.20,
+    "Flexible Space": 0.15,
+    "Viewpoint": 0.10,
+    "Sitting": 0.10,
+    "Community Pool/BBQ": 0.10,
+    "Outdoor Meeting Room": 0.05
+  },
+  "diy_enthusiasts/creatives": {
+    "Creative Corridor": 0.35,
+    "Flexible Space": 0.25,
+    "Outdoor Meeting Room": 0.15,
+    "Urban Agriculture Garden": 0.10,
+    "Storage & Technical Space": 0.10,
+    "Offline Retreat": 0.05
+  }
+}
