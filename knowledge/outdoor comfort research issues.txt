@@ -1,0 +1,148 @@
+Outdoor comfort research issues
+
+ 1. Introduction
+
+Thermal comfort of persons staying outdoors is one of the factors influencing outdoor activities in streets, plazas, playgrounds, urban parks, etc. The amount and intensity of such activities is affected by the level of the discomfort experienced by the inhabitants when they are exposed to the climatic conditions in these outdoor spaces. Thus, for example, on a hot summer day the thermal discomfort of people staying outdoors exposed to the sun may discourage them from utilizing available urban parks, depending on the particular combination of the air temperature, the surface temperature of the surrounding areas, the wind speed and the humidity level. The availability of shaded outdoor areas may result in greater utilization of the open space by the public.
+
+In a similar way, in a cold region, a given combination of wind speed and air temperature, or the obstruction of the sun in shaded areas, may discourage people from staying outdoors while the provision of sunny areas protected from the prevailing winds may encourage public activities in that outdoor space. Thus, minimizing outdoor discomfort may enhance the vitality of the location during periods of extreme temperatures (low in winter and/or high in summer).
+
+The actual levels of the ambient air temperature, solar radiation and wind, in a particular location, can be modified by the design details of the outdoor spaces. Such details may include the provision of shading elements, materials and colors of the surrounding hard surfaces, provision and details of planted surfaces, wind ‘breaks’ or ‘openness’ to the wind, etc. Thus, the exposure to, or protection from, solar radiation, the temperatures of the surrounding surfaces, and the local wind speed, can be modified to a large extent by the choice of different design details. Even the local air temperature can be affected to some degree by the outdoor space design details.
+
+In order to evaluate the importance of modifying the outdoor climate in a particular direction by specific design details it would be helpful if the designer would have some means for ‘predicting’ the effect of a particular change in a climatic element on the comfort of persons staying outdoor. Almost all of the research done to date on human thermal comfort was conducted under indoor conditions. Specific procedures enabled comparison of results obtained in different studies. For example, the clothing worn by the subjects in different seasons was often the same, regardless of the climatic conditions prevailing outdoor in that location during the testing season. An inherent (although questionable) assumption involved in this procedure is that when a person is staying indoors his subjective reactions to temperature, air speed, etc. are independent of the conditions prevailing outdoors.
+
+Research on outdoor comfort involves different conditions and issues, not encountered in studies on indoor comfort. When staying outdoors, people expect variability in the exposure conditions: variation of sun and shade, changes in wind speed, and so on. Pedestrians may be exposed to intense solar radiation and to the winds, factors that modify greatly their response to the temperature and humidity conditions. Furthermore, people staying outdoors usually wear different clothing in different seasons, clothing that are suitable to the prevailing climate. Therefore, fixed standard clothing is not applicable in outdoor research. In each particular season the subjects should wear clothes which are commonly used in that particular location and season. Thus, in an outdoor comfort study conducted in Japan [2], the subjects wore, in each season, clothes commonly worn by local persons when staying outdoors.
+
+By comparing outdoor comfort studies conducted in different seasons, and/or in regions with different climates, it would be possible to evaluate the effect of changes in the prevailing climatic conditions on the temperature range within which people feel comfortable outdoors, when the subjects are wearing clothing common for outdoor exposure in the given location and season. The effect of direct exposure to solar radiation is not limited to the thermal sensation. In winter it may produce specific pleasure. On a hot summer day it may produce specific discomfort, beyond the heat sensation. In un-shaded areas pedestrians may also be exposed to surface temperatures much higher in summer and lower in winter than the ambient air temperature.
+
+Outdoors, wind speeds are much higher than the air speeds common indoor. Wind in summer, up to a certain speed, may be specifically pleasant, while in winter it may be specifically annoying. These factors have to be included in evaluating the overall subjective responses to the outdoor environment.
+
+The following section of the paper is a review of an experimental study conducted in Japan in 1994–1995 and of several studies presently conducted in Israel, dealing with outdoor comfort. It describes the research procedures of the studies, presents some selected experimental results and discusses some of the problems encountered in the conduction of the research and in the analysis of the data.
+
+2. The study in Japan—by Noguchi and Givoni
+
+The Fujita Corporation conducted research, monitoring the thermal sensation and overall comfort of subjects staying outdoors in Japan in 1994–1995 [1,2]. The objective of this research was to determine the quantitative effect on the comfort of Japanese persons dressed according to the common practice in the different seasons, of various design features of plazas which can modify the sun and wind exposure conditions during different seasons.
+
+2.1. Research procedure
+
+The research utilized a questionnaire surveys on the subjects’ sensory responses and included physical measurement of outdoor climate data. The subjects’ group consisted of six persons, males and females, ranging from the twenties to the fifties. They worked in three pairs, each pair staying in one area for 20 min and moved to a different one. It meant that after 1 h a pair would finish staying in all the three areas: exposed to the sun and undisturbed wind, exposed but with reduced wind and in the shade and undisturbed wind. This procedure was repeated seven times a day. In each ‘test’ the subjects were asked to sit still in their chairs for 15 min to get used to the condition, and filled in a questionnaire in the remaining 5 min.
+
+The common outdoor clothing in Japan for a given season was selected for each season:
+(i) Spring and autumn: long-sleeve shirt, jacket and trousers (CLO value = 1.1).
+(ii) Summer: short-sleeve T-shirt and trousers (CLO value = 0.65).
+(iii) Winter: long-sleeve shirt, knitted jumper, thick jacket and trousers (CLO value = 1.67).
+
+The questionnaire was mainly concerned with thermal sensation and overall comfort. Thermal sensation is the perception of heat or cold, on a scale of one (very cold) to seven (very hot). The scale of the overall comfort level is from one (very uncomfortable) to seven (very comfortable). Level four is neutral, when one does not feel any thermal discomfort, to correspond with level four of the thermal sensation. The comfort level above five (super comfort) were included so that effects which produce ‘pleasure’ beyond just comfort, such as the wind in the hot humid summer and the sun in winter, could be identified. This point is further discussed later in the paper.
+The experiments were conducted under controlled solar insolation and wind speed in order to understand how these physical factors influence the thermal sensation and the comfort level of Japanese persons staying in outdoor spaces. A grassed open space and an asphalt parking area in a park in Yokohama city were chosen as the sites for the experiments. The subjects were divided into three groups with different exposure conditions at very small distances between them. The first group was sitting under a large shade tree (TREE). The second group was sitting in a nearby open area exposed to the sun (SUN). The third group was also in the open area but behind a vertical wind break made of transparent polyethylene sheets supported on wood frames (WIND BREAK).
+
+The groups were rotated between the three exposure sites so that, on the average, every subject was exposed to the same conditions. The groups were rotated between the three exposure sites every 20 min so that, on the average, every subject was exposed to about the same conditions. Because of the very small distances between the exposure sites it can be assumed that the air temperatures and the humidity, at a given time, are the same for the three groups. The only differences are in the solar radiation (between the TREE on the one hand and the SUN and WIND-BREAK on the other) and in the wind speeds (between the TREE and SUN groups on one hand and the WIND-BREAK group on the other).
+
+The study was carried out in different seasons, from the summer of 1994 to the summer of 1995. In each season, experiments were conducted during 2 days, for a total 9 experimental days. Each experimental day started at 9 a.m. and finished at 5 p.m. The measured environmental physical factors were air temperature in the shade (Ta, °C), horizontal solar radiation (SR, W/sqm), wind speed (WS, m/s), relative humidity (RH, %) and the surrounding ground surface temperature (ST, °C). The climatic measurements were carried out every hour in each test area.
+
+By comparing rapid consequent measurements of the horizontal solar radiation intensity ‘in the sun’ and under the shade tree the shading effectiveness of the trees was evaluated. The radiation intensity under the tree was about 10% of the radiation at the exposed sites in the summer and fall seasons. In the winter and spring seasons, when the trees’ foliage was less dense, the radiation under the tree was about 20% of the radiation in the open area. The wind speed behind the wind break was about 50% of the speed at the exposed site.
+
+Analysis of the data enabled the development of a formula predicting the thermal sensation of subject staying outdoors, as affected by acclimatization to the changing climate and the different common clothing in the different seasons. The data also enabled to demonstrate the relationship between thermal sensation and overall comfort.
+
+2.2. Selected experimental results
+This paper presents the details of the experimental program, the methodology of the data analysis, and the formula that was developed on the basis of the experimental data. The detailed results of the experimental study were presented in [2]. A multi-factor regression formula, expressing thermal sensation (TS) as a function of the five variables.
+TS=1.7+0.1118Ta+0.0019SR−0.322WS−0.0073RH+0.0054ST
+with an R² value of 0.8792. Note in the formula the negative sign for the effect of relative humidity (indicating lowering of the thermal sensation with higher humidity). This is in contrast with the accepted notion that higher humidity increases the sensation of warmth. This point is further discussed below.
+
+It should be stressed that the above formula is based on a very small number of subjects. Therefore, it should be considered only as an indication that it is possible to develop a predictive model for the thermal sensations of persons in outdoor spaces, taking into account the effect of the exposure conditions, including that of solar radiation, and the subject’s seasonally adjusted clothing and acclimatization.
+
+Fig. 1 shows the correspondence between the measured and the calculated thermal sensations, with different markings for the different seasons. Fig. 2 shows the same data but with different markings for the different exposure conditions (shade, sun and wind screen).
+
+2.3. Comments on the effect of relative humidity
+The analysis of the effects of combination of various climatic elements may be more complex in outdoors comfort studies than in indoor conditions, because of peculiar interactions between the climatic elements in specific locations and seasons. This factor may present specific problems in developing mathematical models by multiple factor regression.
+
+For instance, in the study in Japan, the humidity was much lower and the temperature higher during sunny days of a given season than in cloudy days. The subjects feel warmer during the sunny days mainly because of the solar radiation. During the same days the humidity is lower. The cooling effect of higher humidity, shown by the regression formula described above, may have been just an ‘error’ resulting from the very small number of human subjects, and may not represent the real independent effect of the humidity. On the other hand, it may have resulted from the particular combinations of solar radiation and humidity described above.
+
+2.4. Relative effects of air temperature, solar radiation and wind speed on thermal sensation
+The effects of solar radiation and wind speed can be related to the effect of air temperature by calculating the changes in these factors which will produce the same effect as that of a unit change in air temperature (1 °C).
+
+To sharpen the relative effects of air temperature, solar radiation and wind speed on thermal comfort in the above study, a predictive formula for the thermal sensation has been developed which takes into account only the effects of air temperature, solar radiation and wind speed. 
+TS=1.2+0.1115Ta+0.0019SR−0.3185WS
+with an R² value of 0.8711. Thus, the experimental results of this study suggest that a change of 59 W/sqm in solar radiation, and a change of 0.35 m/s in wind speed, had similar effect to a change of 1 °C in air temperature. Again, it should be stated that the number of human subjects and testing days were very small. Therefore, the above results should be considered only as very rough approximations.
+
+2.5. Comfort and thermal sensation
+Thermal comfort level is related to the thermal sensation. However, one may feel uncomfortable either when it is too warm, or when it is too cold. Fig. 3 shows the relationship between the thermal sensations and the comfort level, as observed in the comfort study in Japan.
+
+In retrospect it seems that the inclusion of the ‘super comfort’ levels in a study covering a wide range of thermal discomfort has reduced the clarity of the relationship between thermal sensation and comfort. Thermal comfort may be a required condition, but it is not sufficient, for environmental ‘positive’ pleasantness.
+
+As far as just the absence of discomfort is concerned, comfort levels five, six, and seven (a little comfortable, more comfortable, very comfortable) could have been combined into one category of “comfortable.” As an alternative way to deal with thermal comfort beyond the sensation of the level of heat or cold, thermal comfort could better be defined just as the absence of any sense of discomfort.
+
+Wording of the ‘super comfort’ levels could be in terms of levels of pleasantness, or stimulation, rather than thermal comfort, and constitute a separate response, to enable clearer analysis. The effects on pleasantness of such factors, for example, as wind speed or of the exposure to the sun, in winter and in summer, could then be investigated, with higher sensitivity, under a range limited to environmental conditions producing a comfortable thermal sensation.
+
+3. Studies at Tel Aviv University in Israel
+A number of experimental studies are being conducted at the Department of Geography of Tel Aviv University in Israel, dealing with the impact of green area on the microclimate. These studies involve measurements of the air and surface temperatures, humidity, wind speed, and solar radiation. Several of these investigations include also the monitoring of comfort sensations of the students engaged in the research. In this way, the correlation between the comfort sensations and the climatic condition measured at the same time can be analyzed.
+
+A description of the issues investigated, the experimental set-up, selected experimental results and discussion of the problems encountered in these studies is presented in the following sections.
+
+3.1. Research conducted by Hadas Saaroni
+An experimental research, monitoring the climatic conditions, thermal sensation and overall comfort, of subjects staying outdoors, is being conducted in an urban park in Tel Aviv, Israel. The objectives of this research were to study the climatic effect of a small lake, during different warm weather systems, as well as its effect on human comfort.
+
+3.1.1. Research procedure
+The research involved climatic measurements in the park and a questionnaire surveys on the subjects’ sensory responses. The park consists mainly from open grass areas with several areas of trees. A lake (~4 ha) is located at the south edge of the park surrounded by open area with minimal vegetation, i.e. several isolated trees.
+
+Two experimental days were chosen under two different weather conditions: 17 May and 1 June, 2000. Measurements were taken during daytime, from 07:30 to 18:30 local solar time. Four stations were located surrounding the lake (at a distance of 3–5 m from the waterside) on open grass surface. Two more stations were located 300 m on the upwind of the lake, one on open grass surface and the second under a tree with large canopy. All surfaces were not irrigated during the measurement day and the day previous to the day of measurement. Shade was provided near the four stations in the open areas by umbrellas.
+
+The measured environmental factors included air temperature (°C), horizontal solar radiation (W/sqm), wind speed (m/s), relative humidity and the surrounding ground surface temperature. Solar radiation was measured on exposed surface and under a tree, whereas the other parameters were measured in six fixed stations in Stevenson screens that were set in the park.
+Comparison of rapid consequent measurements of the horizontal solar radiation intensity ‘in the sun’ and under the shade tree have demonstrated that the radiation intensity under the tree was about 10% of the radiation at the exposed sites. The radiation under the umbrellas was estimated to be 30% of the radiation in the open area. The wind speed at the stations surrounding the lake was up to four times stronger than at the location far from the lake.
+
+The research also utilized a questionnaire surveys on the subjects’ sensory responses. The subjects’ group consisted of 10 persons, males and females, in their twenties. The subjects wore light T-shirts, the common outdoor clothing in Tel Aviv.
+
+The subjects worked in pairs. Each person of a pair stayed 15 min in the sun and 15 min under a shade. They filled the questionnaire every 30 min. In each ‘test’ the subjects were asked to sit still in their chairs for 10 min to get used to the condition, and to fill in the questionnaire in the remaining 5 min. Every 2 h the pairs of subjects changed their location.
+
+The questionnaire was mainly concerned with thermal sensation and overall comfort. Thermal sensation was marked on a scale of zero (very cold) to nine (unbearable heat) when a level four is neutral, when one does not feel any thermal discomfort, he feels well. The scale of the sensible perspiration is from zero (very dry) to seven (all cloth are wet).
+
+3.1.2. Selected results concerning comfort
+The differences in air temperature and solar radiation between the five un-shaded stations were relatively small (up to 2.6 8C between the stations on the upwind and the stations at the downwind of the lake). In the first stage of the data analysis the comfort votes of the subjects from the five unshaded stations were averaged, so that each vote represented an average of a group of about 10 persons. The comfort votes from the shaded station represents also an average of 10 persons.
+
+Fig. 4 shows the pattern of the average comfort votes of the subjects exposed to the sun and those in the shade. The figure shows also the pattern of the solar radiation during the experimental period. The range of the air temperature during the 2 days of the measurements was rather small, from 23 to 27 8C.
+
+Analysis of the data enabled the development of an experimental formula expressing the average comfort vote (CV) as a function of solar radiation (SR), wind speed (WS) and air temperature (DBT). The obtained formula was:
+CV = 0.0033 × SR + 0.22 × DBT – 0.05 × WS – 2.3
+
+3.2. Research of Noa Feller
+This study took place in Kibbutz Mash’abei-Sadeh and its immediate surroundings. The Kibbutz is located in the Negev desert. The measurements were taken during 4 consecutive days between 30th July and 2nd August 2000. During the first day, maximum temperature was 41 8C. The conditions had become more moderate during the second day (maximum temperature of 38 8C). During the third and fourth days, the maximum temperature was 34 8C.
+
+Six fixed stations were set in the Kibbutz area measuring solar radiation, temperature, relative humidity and wind speed and direction. The stations were located in order to check the condition in the desert compared with those in the Kibbutz (which forms an oasis in the desert). One or two people sat near each station and completed a questionnaire about their thermal and perspiration sensations once an hour.
+
+The two first stations were set up in the middle of the Kibbutz. One was in the middle of a big lawn, exposed to the sun; the other was close by but located under a big canopy of a tree, which provided total shade. The third and fourth stations were set up along the opposite outskirts of the Kibbutz. One station upwind and the other station downwind. Both locations were exposed to the sun during the day. No vegetation was present on the ground. An umbrella of 2 m diameter near the station provided shade.
+
+The fifth station was set up outside the Kibbutz, about 1 km from the Kibbutz’s edge, upwind, exposed to the sun, with no vegetation. Shading was provided by a nearby umbrella. Thermal sensations were taken in the sun and under the umbrella.
+
+The sixth station was established in a high pine grove inside the Kibbutz, upwind. The station was shaded during the day. The soil was bare, with no vegetative cover. Thermal sensations were taken in the shade near the station and in sun outside the grove. The climatic effect of the vegetation in the Kibbutz will be discussed in another paper. It is of interest to note, however, that the largest difference in measured air temperature between any two stations was 2.3 8C and most of the time it was lower than 1.5 8C.
+
+Fourteen different people participated in the experiment. They worked in two groups of seven and were rotated in shifts between the stations every 4–5 h. The participants spent 50 min sitting in the shade and recording their thermal sensation. Then they moved to the sun for 10 min and wrote down their sensations in sun. Several times during the experiment, all 14 participants were assembled in one place to record their thermal sensation.
+
+3.2.1. Selected results concerning comfort
+Fig. 6 shows the relationship between the thermal sensation recorded with subjects staying in the sun and in the shade, as a function of the air temperature (DBT), with corresponding regression lines. The average slope of the thermal responses with changes in the air temperature (DBT) was 0.18 (units/8C). The difference between the average thermal responses in the ‘‘sun’’ and in the shade conditions was 1.3 units. It means that the effect of the exposure to the average solar radiation was equivalent to about 7 8C (1.3/0.18).
+
+The average solar radiation intensity during the experimental period was 536 (W/sqm). The radiation level in the shaded positions was measured and was found to be about 10% of the radiation level ‘in the sun’.
+
+It should be noted that patterns of the air temperature and solar radiation during the daytime hours in a desert environment are highly correlated. As the air temperature was highly correlated with the solar radiation, the apparent response of the shaded subjects to solar radiation reflects mainly their response to the changes in the correlated air temperature.
+
+Fig. 7 shows the relationship between the thermal sensation recorded with subjects staying in the sun and in the shade, as a function of the solar radiation, with corresponding regression lines. The slopes of the changes in the thermal sensation with increased radiation level were 0.0028 for the ‘sun’ positions and 0.0024 for the shaded subjects. A slope of 0.0028 means that with a maximal solar radiation (about 1000 W/sqm) the effect on the thermal sensation (without changes in the air temperature) would be about 2.8 thermal sensation units, equivalent to a change of about 14 8C in the air temperature.
+
+3.2.2. Encountered methodological issues
+The sensations were first recorded in the shade and then in the sun. It was not established whether it would make a difference if it had been recorded in the shade and thereafter in the sun.
+It was not checked out whether a 10 min period of exposure to the sun is sufficient time to stabilize the sensation.
+
+3.3. Research by Oded Pochter, Yaron Yaacov and Stefan Becker
+This study was conducted in the Kibbutz Yotvata, as part of an applied desert climatology project that examined the oasis effect in extremely hot, arid zones and its impact on human activities. Yotvata is located in the southern part of the Arava Valley, 30 km north of Eilat and the Red Sea.
+
+The climate of the Arava Valley is characterized during the summer by high solar radiation, extremely hot temperatures and very low humidity during the daytime; while during the night the temperatures and relative humidity are moderate. This creates high daily temperature amplitude.
+
+During the experiment, four meteorological stations were set up in different locations measuring temperature, relative humidity, wind speed and direction. Station no. 1 (hill) was located on a bare hill at the edge of the Kibbutz, which is representative of the climatic conditions in the desert. The second station (trees) was located at the center of the Kibbutz near the central dining room, on green grass and under high and dense trees representing the oasis effect. The third station (grass) was located in a green area containing grass and tall trees in the residential neighborhood of the Kibbutz, but the subjects in that station were exposed to the sun. The fourth station was located on exposed, dry grass at the other edge of the Kibbutz.
+
+A group of 36 male and female students in their twenties and thirties participated in the experiment. The subjects were all residents of the area, and thus acclimatized to the hot climate.
+
+The experiment started on the 10th of July 2000 at 12:00 noon (midday) and continued until 12:00 noon the next day. The participants were divided into three groups. Each group contained 12 students and worked an 8 h shift: the first between 12:00 noon and 8:00 p.m., the second between 8:00 p.m. and 04:00 a.m., and the third between 04:00 a.m. and 12:00 noon.
+
+During each shift, the participants were divided among the stations. They sat in the proximity of a station and were exposed to the climatic conditions for 30 min. After the 30 min had elapsed, they filled in a questionnaire in which they answered questions on comfort levels. During the daytime, after the 30 min of exposure, the participants were moved from the station to air-conditioned rooms. They then returned to the station and sat for another 30 min and filled in a second questionnaire. The 30 min gaps were necessary because of the extremely hot temperature they were being exposed to.
+
+During the night, the participants did not require the half-hour rest periods in air-conditioned rooms and were able to go from one station to another while remaining outdoor. Throughout the experiment, the participants were moved from one station to the next every 2 h, so that by the end of the shift they had experienced all the different stations twice.
+
+During the last 2 h of the experiment, 10 of the participants were gathered together at the station in the Kibbutz center. Seven of them stayed under the shade and three were exposed to the sun.
+
+The questionnaire was mainly concerned with thermal sensation and overall comfort. The thermal sensation had eight levels: -3 very cold, -2 cold, -1 cool, 0 comfortable, 1 warm, 2 hot, 3 very hot and 4 unbearably hot. During daytime, the participants wore light clothing: white cotton T-shirts and long light-colored trousers. At night during the cold hours, they added a pullover.

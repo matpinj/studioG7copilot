@@ -1,0 +1,17 @@
+activity,geo_type,orientation,min_area,min_open_sides,min_level,privacy,in_out,max_wind_exp,sun_h,utci
+Sitting,Any,Any,1.5,Any,Any,Any,Any,3.5,2,Any
+Offline Retreat,"balcony, courtyard","N, E, W",3,1,1,Any,outdoor,3.5,2,18–30
+Sunbath,"balcony, terrace","S, W",3,2,1,Any,outdoor,3.5,5,22–36
+Healing Garden,"courtyard, terrace","E, W",3,1,1,Any,outdoor,4,3,20–33
+Playground,courtyard,Any,6,2,0,shared,outdoor,4,3,18–34
+Sports,"courtyard, terrace","E, S, W",9,2,0,Any,outdoor,3.5,3,18–30
+Outdoor Cinema/Event Space,courtyard,"E, W",9,2,0,shared,outdoor,3.5,2,18–26
+Community Pool/BBQ,"courtyard, terrace",Any,9,2,0,shared,outdoor,4,4,22–32
+Flexible Space,"courtyard, terrace",Any,6,1,1,Any,Any,4,3,Any
+Creative Corridor,"balcony, corridor",Any,3,1,Any,shared,Any,Any,3,Any
+Outdoor Meeting Room,"terrace, courtyard",Any,6,1,1,shared,outdoor,3.5,3,20–28
+Green Corridor,"corridor, courtyard","N, W",3,2,0,Any,outdoor,4,2,18–26
+Biodiversity balcony,balcony,"S, E, W",3,1,2,Any,outdoor,Any,4,Any
+Urban Agriculture Garden,"courtyard, terrace","S, W",6,2,0,Any,outdoor,Any,5,22–32
+Viewpoint,"balcony, terrace",Any,3,2,2,shared,outdoor,4,3,18–26
+Storage & Technical Space,Any,"N, E, W",1.5,Any,Any,shared,Any,Any,Any,Any
