@@ -23,7 +23,7 @@ type: type of open space, based on area (e.g. balcony, terrace)
 orientation: Cardinal direction (e.g., N, SW, SE)
 height: Height of the space (meters)
 area: Area of the space (square meters)
-level: The building level/floor where the space is located (e.g., 1, 2, 3, ...)
+level: Building level/floor where the space is located
 open_side: Number of open sides
 in_out: Indicates if the space is indoor or outdoor
 wind_exp: Wind exposure
