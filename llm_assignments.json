@@ -1,0 +1,394 @@
+[
+  {
+    "parameters": {
+      "id": "O1",
+      "activity": null
+    },
+    "reasoning": "Invalid LLM output: {\n  \"parameters\": {\n    \"id\": \"O1\",\n    \"activity\": \"Creative Corridor\"\n  },\n  \"reasoning\": \"Given the suitable green prediction and warm_sunny usability prediction, this balcony is ideal for a creative activity. The presence of DIY enthusiasts and creatives among the nearby residents also supports this choice. Additionally, the voting-weighted activity preferences show that Creative Corridor has the highest score, making it the best matching activity for this outdoor space.\""
+  },
+  {
+    "parameters": {
+      "id": "O2",
+      "activity": "Sitting"
+    },
+    "reasoning": "Based on the provided space description and predictions, I assign the best outdoor activity as 'Sitting'. The compactness score of 18 is relatively high, indicating a more intimate space, which suits sitting. Additionally, the usability prediction suggests a warm and sunny environment, making it ideal for relaxation. Considering nearby residents with varying interests, 'Sitting' can cater to their needs. With no strong opposing activities in the voting-weighted preferences, I recommend 'Sitting' as the best matching activity for this space."
+  },
+  {
+    "parameters": {
+      "id": "O3",
+      "activity": "Creative Corridor"
+    },
+    "reasoning": "Based on the provided information, I recommend 'Creative Corridor' as the best outdoor activity for this balcony space (ID: O3). The space is compact and has an orientation towards the east, making it suitable for a warm and sunny area. The nearby residents consist of creatives, academics, and sporty individuals, who would likely appreciate a creative outlet. The voting-weighted preferences also favor 'Creative Corridor' with a score of 0.299, indicating a strong match between the space and activity."
+  },
+  {
+    "parameters": {
+      "id": "O4",
+      "activity": "Sunbath"
+    },
+    "reasoning": "The balcony has a west-facing orientation, which receives warm and sunny conditions, making it suitable for sunbathing. The nearby residents' preferences also support this activity, with young professionals (H40) and sporties (H37) being the majority. Additionally, the compactness of the space is relatively high, indicating that it can accommodate a comfortable seating arrangement for relaxation."
+  },
+  {
+    "parameters": {
+      "id": "O5",
+      "activity": "Sunbath"
+    },
+    "reasoning": "The balcony is oriented towards the North, which means it will receive warm and sunny weather most of the time. The compactness score is high, indicating a small but cozy space. The nearby residents are diverse, with some being sporty or creative, which suggests that they would appreciate a relaxing activity like sunbathing. The voting-weighted preferences also indicate a strong preference for Sunbath among the available options."
+  },
+  {
+    "parameters": {
+      "id": "O6",
+      "activity": "Healing Garden"
+    },
+    "reasoning": "The outdoor space O6 is a suitable and compact (18.0) eastern-facing terrace with warm sunny conditions, which makes it ideal for a healing garden. The nearby residents include diy enthusiasts/creatives and active later living individuals who would benefit from a calming and relaxing environment. According to the voting-weighted activity preferences, a Healing Garden has the highest score among all activities, making it the best matching activity for this space."
+  },
+  {
+    "parameters": {
+      "id": "O7",
+      "activity": null
+    },
+    "reasoning": "Invalid LLM output: {\n    \"parameters\": {\n        \"id\": \"O7\",\n        \"activity\": \"Sunbath\"\n    },\n    \"reasoning\": \"The balcony's west orientation and compactness of 16.0 suggest a warm and sunny environment, making it suitable for sunbathing. The nearby residents' preferences also lean towards outdoor activities like sports and relaxation. The voting-weighted activity preferences show that Sunbath is one of the top choices. Additionally, the green prediction suggests the space can be used for recreational purposes.\""
+  },
+  {
+    "parameters": {
+      "id": "O8",
+      "activity": "Sunbath"
+    },
+    "reasoning": "The balcony's west orientation and compactness suggest a warm and sunny spot, making it suitable for sunbathing. The nearby residents' preferences also lean towards recreational activities like sports, which is not applicable to this small balcony space. Sunbathing is the highest rated activity that aligns with the space's characteristics."
+  },
+  {
+    "parameters": {
+      "id": "O9",
+      "activity": "Community Pool/BBQ"
+    },
+    "reasoning": "The outdoor space is compact and has a warm sunny orientation, making it suitable for social activities. The nearby residents have varying lifestyles, but the majority are active or academically inclined, indicating a demand for recreational spaces. Based on the voting-weighted activity preferences, Community Pool/BBQ emerges as the top choice due to its popularity among the local residents."
+  },
+  {
+    "parameters": {
+      "id": "O10",
+      "activity": "Urban Agriculture Garden"
+    },
+    "reasoning": "Based on the given space description and prediction results, the balcony with a warm and sunny orientation is suitable for an Urban Agriculture Garden. The compactness of 16.0 suggests that the space can accommodate a small garden or some potted plants. Additionally, the nearby residents' preferences show a high interest in gardening/food lovers (H42) and influencers (H45), which makes this activity even more appealing."
+  },
+  {
+    "parameters": {
+      "id": "O11",
+      "activity": null
+    },
+    "reasoning": "Invalid LLM output: {\n  \"parameters\": {\n    \"id\": \"O11\",\n    \"activity\": \"Healing Garden\"\n  },\n  \"reasoning\": \"The space is a suitable and compact (18.0) outdoor area with an eastern orientation, making it perfect for a Healing Garden. The nearby residents have a mix of lifestyles, including active and later living, sporty, and academic individuals, all of whom could benefit from the calming and restorative qualities of a garden. Additionally, the activity preferences show that a Healing Garden is the top choice among the options.\""
+  },
+  {
+    "parameters": {
+      "id": "O12",
+      "activity": "Healing Garden"
+    },
+    "reasoning": "The space is a suitable location for a Healing Garden due to its warm and sunny orientation, which would provide a comfortable environment for users to relax. The compactness of the space also suggests that it could be designed to include various plant species and water features, creating a peaceful atmosphere. Additionally, the nearby residents' preferences for outdoor activities such as sitting and relaxation support this activity choice."
+  },
+  {
+    "parameters": {
+      "id": "O13",
+      "activity": "Outdoor Cinema/Event Space"
+    },
+    "reasoning": "Based on the given space description and prediction results, I recommend 'Outdoor Cinema/Event Space' as the best matching activity for O13. The space is suitable for outdoor activities, has a warm and sunny orientation, and is located near residents with varying lifestyles (active later living, academics, influencers). The voting-weighted preferences also indicate that this type of activity is highly desired by nearby residents. With its 18m\u00b2 area and compactness score of 18.0, the space can accommodate an outdoor cinema or event setup, making it an ideal choice for a community gathering or social activity."
+  },
+  {
+    "parameters": {
+      "id": "O14",
+      "activity": "Sunbath"
+    },
+    "reasoning": "Based on the green prediction, 'suitable', and usability prediction, 'warm_sunny', a sunbathing activity is suitable for this balcony space. Additionally, the compactness score of 16.0 suggests that there is enough space to accommodate a few people, making it ideal for a group of nearby residents who are active_later_living."
+  },
+  {
+    "parameters": {
+      "id": "O15",
+      "activity": "Sunbath"
+    },
+    "reasoning": "Considering the suitable green prediction and warm_sunny usability prediction for this East-oriented 18m\u00b2 compact terrace with one open side, a Sunbath activity is the best match. The nearby residents' preferences, which include Flexible Space and Creative Corridor, are not as well-suited to this space as a simple relaxation activity like sunbathing."
+  },
+  {
+    "parameters": {
+      "id": "O16",
+      "activity": "Sunbath"
+    },
+    "reasoning": "The outdoor space is suitable for sunbathing based on its green and warm sunny conditions. Additionally, the compactness score of 18.0 indicates a relatively open area that can accommodate multiple people. The nearby residents with active lifestyles (sporties, academics, and influencers) would also benefit from this activity."
+  },
+  {
+    "parameters": {
+      "id": "O17",
+      "activity": "Urban Agriculture Garden"
+    },
+    "reasoning": "Given the balcony's northern orientation and compactness, it is suitable for a green space. The nearby residents with interest in gardening/food lovers (H42) and creative enthusiasts (H5) would appreciate this activity. The prediction of 'suitable' for green spaces also supports this choice. Furthermore, the weighted voting preference for Urban Agriculture Garden is the highest among all options."
+  },
+  {
+    "parameters": {
+      "id": "O18",
+      "activity": "Community Pool/BBQ"
+    },
+    "reasoning": "The space is suitable for outdoor activities and has a warm sunny orientation, making it perfect for a community pool or BBQ area. The nearby residents' preferences also lean towards social and recreational activities, with influencers and young professionals being the majority. Community Pool/BBQ is one of the top-rated activity options, considering the space's compactness, open sides, and usability."
+  },
+  {
+    "parameters": {
+      "id": "O19",
+      "activity": "Sunbath"
+    },
+    "reasoning": "Based on the balcony's west-facing orientation and compactness score, it is suitable for a sunbathing area. The nearby residents' preferences also suggest that this activity would be well-received. With its warm and sunny usability prediction, O19 is an ideal spot for residents to soak up some sunlight."
+  },
+  {
+    "parameters": {
+      "id": "O20",
+      "activity": "Outdoor Meeting Room"
+    },
+    "reasoning": "Based on the given outdoor space description, the space is compact and has an open side which makes it suitable for a meeting. The orientation towards the east provides warm sunny conditions, making it ideal for an outdoor meeting room. Additionally, the nearby residents are predominantly academics and young professionals who would likely benefit from such a space."
+  },
+  {
+    "parameters": {
+      "id": "O21",
+      "activity": "Creative Corridor"
+    },
+    "reasoning": "The balcony's warm and sunny usability prediction aligns with the 'Creative Corridor' activity, which is also a top preference among nearby residents (influencers and academics). The compactness of the space allows for flexible layout options, making it suitable for creative activities. The nearby residents' preferences further support this choice."
+  },
+  {
+    "parameters": {
+      "id": "O22",
+      "activity": "Creative Corridor"
+    },
+    "reasoning": "The balcony space is compact and suitable for a creative activity. The voting-weighted preferences suggest that Creative Corridor is the top priority, which aligns with the space's characteristics. Additionally, the nearby residents are mostly creatives (H54) and academics (H58), who would likely appreciate an outdoor creative space."
+  },
+  {
+    "parameters": {
+      "id": "O23",
+      "activity": "Creative Corridor"
+    },
+    "reasoning": "The balcony's sunny orientation and compactness make it suitable for a creative activity like the Creative Corridor. The nearby residents' preferences also lean towards flexible spaces, which aligns with the Creative Corridor's versatile nature."
+  },
+  {
+    "parameters": {
+      "id": "O24",
+      "activity": "Outdoor Meeting Room"
+    },
+    "reasoning": "Based on the threshold-based prediction, green prediction, and usability prediction, this space is suitable for various outdoor activities. Considering the voting-weighted activity preferences, 'Outdoor Meeting Room' has the highest score among all options, indicating that it is the best matching activity for this space."
+  },
+  {
+    "parameters": {
+      "id": "O25",
+      "activity": "Creative Corridor"
+    },
+    "reasoning": "The balcony's compactness (16.0) suggests a space for creative activities. The warm_sunny usability prediction indicates a pleasant environment, suitable for artistic pursuits. The nearby residents' preferences lean towards Creative Corridor (0.474), making it the most suitable activity for this outdoor space."
+  },
+  {
+    "parameters": {
+      "id": "O26",
+      "activity": "Healing Garden"
+    },
+    "reasoning": "The outdoor space is suitable for a Healing Garden due to its warm and sunny usability prediction, which aligns with the green prediction of being suitable. The compactness of 18.0 suggests a cozy and intimate setting, perfect for a healing environment. Additionally, the nearby residents who are gardeners/food lovers (H60) would likely appreciate this type of activity."
+  },
+  {
+    "parameters": {
+      "id": "O27",
+      "activity": "Outdoor Cinema/Event Space"
+    },
+    "reasoning": "The balcony's compactness and suitability for greenery suggest a need for a unique and engaging activity. The warm_sunny usability prediction aligns with the preferences of nearby residents, who are likely to appreciate an outdoor event space. The high voting-weighted score for Outdoor Cinema/Event Space (0.474) indicates that this is the best matching activity for O27."
+  },
+  {
+    "parameters": {
+      "id": "O28",
+      "activity": "Sunbath"
+    },
+    "reasoning": "Based on the threshold-based prediction and the voting-weighted activity preferences, we recommend 'Sunbath' as the best outdoor activity for this balcony space. The orientation towards south (S) suggests a warm and sunny spot, which aligns with the usability prediction of 'warm_sunny'. Additionally, the compactness of 16.0 indicates a cozy and intimate setting, suitable for relaxation and leisure activities like sunbathing. Furthermore, the nearby residents' preferences also support this recommendation, as academics and active later living individuals tend to appreciate relaxing outdoor spaces."
+  },
+  {
+    "parameters": {
+      "id": "O29",
+      "activity": "Sunbath"
+    },
+    "reasoning": "The balcony's west orientation and compactness suggest a warm and sunny spot, making it suitable for sunbathing. The nearby residents' preferences also lean towards relaxing activities like sitting or sunbathing. Given the voting-weighted activity preferences, Sunbath has the highest score among the threshold-based predictions."
+  },
+  {
+    "parameters": {
+      "id": "O30",
+      "activity": "Sunbath"
+    },
+    "reasoning": "The balcony is suitable for a sunbathing activity due to its warm and sunny usability prediction. The compactness of the space also makes it ideal for a relaxed and intimate setting, which aligns with the preferences of nearby residents such as night_owls and academics who value quiet time. The voting-weighted activity preferences also rank Sunbath as one of the top options, making it the best matching activity for this outdoor space."
+  },
+  {
+    "parameters": {
+      "id": "O31",
+      "activity": "Outdoor Cinema/Event Space"
+    },
+    "reasoning": "Based on the given outdoor space description, it is a balcony with a warm and sunny orientation, making it suitable for an outdoor cinema or event space. The compactness of 16.0 indicates that the space can accommodate some furniture and equipment without feeling too cramped. The nearby residents' preferences also suggest that this type of activity would be well-received by most of them."
+  },
+  {
+    "parameters": {
+      "id": "O32",
+      "activity": "Sunbath"
+    },
+    "reasoning": "Based on the suitability of the space for outdoor activities, the compactness and orientation of the balcony, and the preferences of nearby residents, I recommend 'Sunbath' as the best activity. The W-facing orientation and compactness of 16.0 make it ideal for soaking up some sun. Additionally, the nearby residents have a preference for active lifestyles (H61) and outdoor activities (H29, H32), which suggests that they would appreciate a sunbathing space."
+  },
+  {
+    "parameters": {
+      "id": "O33",
+      "activity": "Creative Corridor"
+    },
+    "reasoning": "Based on the threshold-based prediction and voting-weighted activity preferences, 'Creative Corridor' is the best matching activity for outdoor space O33. The compactness of 16.0 suggests a relatively open space, which fits well with the creative corridor concept. Additionally, the green prediction suggests that the space can accommodate plants, which could be incorporated into a creative corridor design. Furthermore, the nearby residents include influencers and academics who may appreciate a creative outdoor space."
+  },
+  {
+    "parameters": {
+      "id": "O34",
+      "activity": "Outdoor Yoga or Meditation"
+    },
+    "reasoning": "The courtyard's NW orientation provides a warm and sunny spot, making it ideal for outdoor activities that appreciate sunlight. The compactness of the space allows for a sense of intimacy, while the nearby residents' preferences (musicians, sporties, young professionals, and influencers) suggest a relaxed and social atmosphere. Considering the 'Storage & Technical Space' threshold-based prediction, this activity would not interfere with potential technical or storage needs. Furthermore, yoga or meditation would be suitable for the green space's conditions."
+  },
+  {
+    "parameters": {
+      "id": "O35",
+      "activity": "Sunbath"
+    },
+    "reasoning": "Given the west-facing orientation and compactness of the balcony, it is suitable for sunbathing. The nearby residents' preferences also suggest that this activity would be well-received. The biodiversity and usability predictions are in line with a sunny and warm environment."
+  },
+  {
+    "parameters": {
+      "id": "O36",
+      "activity": "Sunbath"
+    },
+    "reasoning": "The SE-oriented balcony with an area of 9 and compactness of 16.0 is suitable for outdoor activities. The warm_sunny usability prediction suggests that the space receives direct sunlight, making it ideal for sunbathing. Additionally, the nearby residents' preferences lean towards relaxation and leisure activities, aligning with the calming nature of sunbathing. Given these factors, Sunbath is the best matching activity for O36."
+  },
+  {
+    "parameters": {
+      "id": "O37",
+      "activity": "Sunbath"
+    },
+    "reasoning": "The outdoor space is a suitable and compact (18.0) west-facing terrace with a warm sunny orientation, making it ideal for sunbathing. The nearby residents' preferences also lean towards relaxation and leisure activities. This activity aligns with the green prediction of 'suitable' and takes advantage of the natural warmth and sunlight of the space."
+  },
+  {
+    "parameters": {
+      "id": "O38",
+      "activity": null
+    },
+    "reasoning": "Invalid LLM output: {\n    \"parameters\": {\n        \"id\": \"O38\",\n        \"activity\": \"Sunbath\"\n    },\n    \"reasoning\": \"Based on the green prediction being suitable and the usability prediction being warm_sunny, a sunbathing area is a great fit for this space. Additionally, the nearby residents include gardeners/food_lovers and diy_enthusiasts/creatives who may appreciate a relaxing outdoor spot. The compactness of 18.0 suggests that the space can accommodate multiple people comfortably.\""
+  },
+  {
+    "parameters": {
+      "id": "O39",
+      "activity": "Biodiversity balcony"
+    },
+    "reasoning": "The compactness of the balcony (16.0) suggests a focus on plants and greenery, which aligns with the 'Biodiversity balcony' activity. The suitability for green spaces matches this prediction, and the warm sunny usability also supports plant growth. Additionally, nearby residents with a focus on food/flowers (H15), sport (H18, H37), active lifestyle (H22), and academics (H23) all potentially benefit from a biodiversity-rich environment."
+  },
+  {
+    "parameters": {
+      "id": "O40",
+      "activity": "Sunbath"
+    },
+    "reasoning": "The balcony's west orientation and compactness indicate a warm and sunny space, making it suitable for sunbathing. The nearby residents' preferences also lean towards outdoor activities that promote relaxation, such as sporties and active_later_living. Given the space is green-friendly, sunbathing seems the most fitting activity to maximize its potential."
+  },
+  {
+    "parameters": {
+      "id": "O41",
+      "activity": "Sunbath"
+    },
+    "reasoning": "The balcony's orientation (NW) provides a warm and sunny spot, making it suitable for sunbathing. The nearby residents' preferences also indicate that they would appreciate this activity, with young professionals and sporties being more likely to enjoy outdoor relaxation. Additionally, the compactness of the space is relatively high, allowing for efficient use of the area."
+  },
+  {
+    "parameters": {
+      "id": "O42",
+      "activity": "Sunbath"
+    },
+    "reasoning": "The balcony is compact and has an open side, making it suitable for a relaxing sunbathing experience. The warm and sunny usability prediction also suggests that this activity would be enjoyable in this space. Additionally, the nearby residents' preferences, such as academics and young professionals, are likely to appreciate a quiet and peaceful atmosphere, which sunbathing can provide."
+  },
+  {
+    "parameters": {
+      "id": "O43",
+      "activity": "Balcony Yoga"
+    },
+    "reasoning": "Given the suitable green prediction and warm_sunny usability prediction of the balcony space O43, I recommend Balcony Yoga as the best outdoor activity. This activity aligns with the preferences of nearby residents H16 (sporties), H41 (sporties), and H39 (active_early_living). Additionally, the compactness score of 16.0 suggests a relatively large and open space, making it suitable for yoga practice."
+  },
+  {
+    "parameters": {
+      "id": "O44",
+      "activity": "Sunbath"
+    },
+    "reasoning": "The balcony's southern orientation and compactness suggest a warm and sunny space, making it suitable for sunbathing. The nearby residents' preferences also lean towards relaxation and leisure activities, aligning with the tranquility of sunbathing."
+  },
+  {
+    "parameters": {
+      "id": "O45",
+      "activity": "Outdoor Yoga"
+    },
+    "reasoning": "The balcony's orientation (E) and compactness (16.0) suggest a warm and sunny spot for an outdoor activity. The nearby residents' preferences indicate a mix of people with varying lifestyles, making yoga accessible to all. Since the space is suitable for green activities, we can opt for a low-impact, relaxing practice like yoga. The 9 square meter area provides ample space for mats and minimal equipment, while the open side allows for some natural light and breeze."
+  },
+  {
+    "parameters": {
+      "id": "O46",
+      "activity": "Outdoor Yoga"
+    },
+    "reasoning": "Based on the compactness of 21.33333333333333, this SE-oriented terrace with open sides is suitable for outdoor activities that can be adapted to the available space. The warm_sunny usability prediction suggests a pleasant environment for physical activity. Considering the nearby residents' preferences and the green prediction, Outdoor Yoga seems an ideal choice, as it allows for a peaceful and energizing experience."
+  },
+  {
+    "parameters": {
+      "id": "O47",
+      "activity": null
+    },
+    "reasoning": "Error: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))"
+  },
+  {
+    "parameters": {
+      "id": "O48",
+      "activity": null
+    },
+    "reasoning": "Error: HTTPConnectionPool(host='localhost', port=1234): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002247FB7B7C0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))"
+  },
+  {
+    "parameters": {
+      "id": "O49",
+      "activity": null
+    },
+    "reasoning": "Error: HTTPConnectionPool(host='localhost', port=1234): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002247FB7ACE0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))"
+  },
+  {
+    "parameters": {
+      "id": "O50",
+      "activity": null
+    },
+    "reasoning": "Error: HTTPConnectionPool(host='localhost', port=1234): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002247FB7BC40>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))"
+  },
+  {
+    "parameters": {
+      "id": "O51",
+      "activity": null
+    },
+    "reasoning": "Error: HTTPConnectionPool(host='localhost', port=1234): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002247FB7BAF0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))"
+  },
+  {
+    "parameters": {
+      "id": "O52",
+      "activity": null
+    },
+    "reasoning": "Error: HTTPConnectionPool(host='localhost', port=1234): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002247FB7A410>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))"
+  },
+  {
+    "parameters": {
+      "id": "O53",
+      "activity": null
+    },
+    "reasoning": "Error: HTTPConnectionPool(host='localhost', port=1234): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002247FB79B40>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))"
+  },
+  {
+    "parameters": {
+      "id": "O54",
+      "activity": null
+    },
+    "reasoning": "Error: HTTPConnectionPool(host='localhost', port=1234): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002247FB7B5B0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))"
+  },
+  {
+    "parameters": {
+      "id": "O55",
+      "activity": null
+    },
+    "reasoning": "Error: HTTPConnectionPool(host='localhost', port=1234): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002247FB7A3B0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))"
+  },
+  {
+    "parameters": {
+      "id": "O56",
+      "activity": null
+    },
+    "reasoning": "Error: HTTPConnectionPool(host='localhost', port=1234): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002247FB7BB80>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))"
+  }
+]

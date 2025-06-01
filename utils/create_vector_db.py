@@ -1,10 +1,12 @@
 # This script runs locally (w/LM Studio server) and an embedding model loaded.
 import sys
-sys.path.insert(0, 'C:\\Users\\Matea\\Documents\\IAAC\\3\\studio\\SQL\\LLM-SQL-Retrieval')
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, 'C:\\Users\\nseda\\Documents\\GitHub\\LLM-SQL-Retrieval')
 from server.config import *
 import json
-import os
-import re 
+import re
+from server.keys import *
 
 
 document_to_embed = "knowledge\\table_descriptions.txt"
