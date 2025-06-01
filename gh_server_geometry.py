@@ -98,6 +98,8 @@ Be concise and use plain language.
 #     response = ask_about_nearby_spaces(house_key, question)
 #     return jsonify({"response": response})
 
+#endregion
+
 
 
 
@@ -157,7 +159,7 @@ def suggest_geometric_variations_route():
         # This functionality comes from get_intelligent_geometric_suggestions in geometry_orchestrator.py
         try:
             suggestions_json_str = get_intelligent_geometric_suggestions(space_id, user_profile)
-            
+                
             # Attempt to extract JSON if wrapped in markdown or has leading/trailing text
             cleaned_json_str = suggestions_json_str # Default to original string
             # First, try to find JSON wrapped in ```json ... ```
@@ -171,15 +173,22 @@ def suggest_geometric_variations_route():
                 if match_object:
                     cleaned_json_str = match_object.group(1)
             
+            # Specifically address the observed issue where LLM might output '\ n'
+            # instead of a proper '\n' for newlines in the space_details string.
+            cleaned_json_str = cleaned_json_str.replace('\\ n', '\\n')
+            
             suggestions_data = json.loads(cleaned_json_str) # Parse the cleaned or original string
             app.logger.info(f"Successfully parsed JSON for space_id {space_id}")
             return jsonify(suggestions_data), 200
         except json.JSONDecodeError as e:
             # Log the raw string and the cleaned attempt
-            app.logger.error(f"JSONDecodeError for space_id {space_id}: {e}. Raw LLM response: >>>{suggestions_json_str}<<< Cleaned attempt: >>>{cleaned_json_str if 'cleaned_json_str' in locals() and cleaned_json_str != suggestions_json_str else 'N/A (used raw)'}<<<")
+            app.logger.error(f"JSONDecodeError for space_id {space_id}: {e}. Raw LLM response: >>>{suggestions_json_str}<<< Cleaned attempt: >>>{cleaned_json_str}<<<")
             return jsonify({"error": "Failed to parse LLM response for geometric variations. Output was not valid JSON."}), 500
         except Exception as e:
-            app.logger.error(f"Error in geometric suggestions for space_id {space_id}: {str(e)}. Raw LLM response if available: >>>{suggestions_json_str if 'suggestions_json_str' in locals() else 'Not available'}<<< Cleaned attempt if available: >>>{cleaned_json_str if 'cleaned_json_str' in locals() and cleaned_json_str != suggestions_json_str else 'N/A'}<<<")
+            # Log generic errors, including the raw and cleaned strings if available
+            raw_response_for_log = suggestions_json_str if 'suggestions_json_str' in locals() else "Not available"
+            cleaned_response_for_log = cleaned_json_str if 'cleaned_json_str' in locals() else "Not available"
+            app.logger.error(f"Error in geometric suggestions for space_id {space_id}: {str(e)}. Raw LLM response: >>>{raw_response_for_log}<<< Cleaned attempt: >>>{cleaned_response_for_log}<<<")
             return jsonify({"error": f"Failed to suggest geometric variations: {str(e)}"}), 500
     else:
         # Neither 'question' nor 'space_id' was provided

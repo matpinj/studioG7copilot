@@ -1,5 +1,6 @@
 from server.config import *
 import re
+import json # Added for json.dumps
 import pandas as pd
 ##test
 
@@ -170,11 +171,16 @@ def fix_sql_query(dB_context: str, user_question: str, atempted_queries: str, ex
 
 
 def suggest_geometric_variations(space_id: str, user_profile: str, space_context: str) -> str:
+    # Pre-process space_context to handle backslashes for LLM consumption.
+    # If the LLM tends to convert '\\' (double backslash) in its input prompt
+    # to a single backslash '\' in its JSON string output, this pre-processing aims to compensate.
+    # Raw backslash '\' in space_context becomes '\\' (Python string literal for a single backslash).
+    # This '\\' is then processed by json.dumps.
+    processed_space_context_for_prompt = space_context.replace('\\', '\\\\')
     response = client.chat.completions.create(
         model=completion_model,
-        temperature=0.4, # Lowered temperature for more deterministic and rule-adherent JSON output
+        temperature=0.2, # Lowered temperature for more deterministic and rule-adherent JSON output
         messages=[
-            
                 {
                 "role": "system",
                 "content": """
@@ -249,7 +255,6 @@ Example for a "Play Area" space_id and "Families with Young Children" user_profi
  Ensure the output is only the JSON object. The value for "space_details" should be the exact string provided in the "Space Details" section of the user input.
  """
              },
-
             {
                 "role": "user",
                 "content": f"""
@@ -257,7 +262,13 @@ Generate geometric variations for the following:
 Space ID: {space_id}
 User Profile: {user_profile}
 Space Details:
-{space_context}
+{
+    # Escape the space_context to be JSON-string-safe for the prompt.
+    # This converts actual newlines to '\\n', quotes to '\\"', etc.
+    # We then strip the outermost quotes added by json.dumps(),
+    # so it appears as a block of text in the prompt for the LLM.
+    json.dumps(processed_space_context_for_prompt)[1:-1]
+}
 """
             }
         ]
