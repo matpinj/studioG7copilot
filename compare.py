@@ -16,6 +16,8 @@ levels = {
 
 results = []
 
+# --- Compare activities requested by residents with possible activities in activity_space ---
+
 for level_num, level_df in levels.items():
     # Filter activity_space for the given level
     activity_space_level = activity_space[activity_space['level'] == level_num]
