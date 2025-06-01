@@ -76,7 +76,6 @@ def execute_sql_query(dB_path, sql_query):
 
 # Execute and self-debug sql queries
 def fetch_sql(sql_query, dB_context, user_question, dB_path):
-    sql_result = None  # <-- Ensure it's always defined
     attempt = 1
     max_retries = 3
     atempted_queries = []
@@ -122,3 +121,37 @@ def fetch_sql(sql_query, dB_context, user_question, dB_path):
         
     return sql_query, sql_result
 
+def get_space_details_as_string(db_path: str, space_id: str, table_name: str, id_column_name: str) -> str | None: # type: ignore
+    """
+    Fetches all details for a specific space_id from a given table and returns them as a formatted string.
+
+    Args:
+        db_path (str): The path to the SQLite database file.
+        space_id (str): The ID of the space to fetch details for.
+        table_name (str): The name of the table where space details are stored.
+        id_column_name (str): The name of the column in table_name that holds the space_id.
+
+    Returns:
+        str | None: A string containing the space details, or None if not found or an error occurs.
+    """
+    conn = None
+    # The try-finally structure is kept to ensure the database connection is always closed
+    # if it was successfully opened. The 'except' block is removed.
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+        query = f"SELECT * FROM {table_name} WHERE {id_column_name} = ?"
+        cursor.execute(query, (space_id,))
+        row = cursor.fetchone()
+
+        if row:
+            column_names = [description[0] for description in cursor.description]
+            details = [f"{col_name}: {value}" for col_name, value in zip(column_names, row)]
+            return "\n".join(details)
+        return None  # Space ID not found
+    # If a sqlite3.Error occurs in the try block, it will propagate up,
+    # and the function will terminate before reaching 'return None' here.
+    finally:
+        if conn:
+            conn.close()
