@@ -84,24 +84,6 @@ Be concise and use plain language.
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-#llm_nearby_space_qna
-#region
-# @app.route('/llm_nearby_space_qna', methods=['POST'])
-# def llm_nearby_space_qna():
-#     data = request.get_json()
-#     house_key = data.get("house_key")
-#     question = data.get("question")
-
-#     if not house_key or not question:
-#         return jsonify({"error": "Missing 'house_key' or 'question' in request."}), 400
-
-#     response = ask_about_nearby_spaces(house_key, question)
-#     return jsonify({"response": response})
-
-#endregion
-
-
-
 
 @app.route('/llm_space_assignment', methods=['POST'])
 def llm_space_assignment():

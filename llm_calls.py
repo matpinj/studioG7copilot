@@ -170,7 +170,13 @@ def fix_sql_query(dB_context: str, user_question: str, atempted_queries: str, ex
 
 
 
-def suggest_geometric_variations(space_id: str, user_profile: str, space_context: str) -> str:
+def suggest_geometric_variations(
+    space_id: str, 
+    user_profile: str, 
+    space_context: str, 
+    green_prediction: str, 
+    threshold_prediction: str, 
+    usability_prediction: str) -> str:
     # Pre-process space_context to handle backslashes for LLM consumption.
     # If the LLM tends to convert '\\' (double backslash) in its input prompt
     # to a single backslash '\' in its JSON string output, this pre-processing aims to compensate.
@@ -263,12 +269,11 @@ Space ID: {space_id}
 User Profile: {user_profile}
 Space Details:
 {
-    # Escape the space_context to be JSON-string-safe for the prompt.
-    # This converts actual newlines to '\\n', quotes to '\\"', etc.
-    # We then strip the outermost quotes added by json.dumps(),
-    # so it appears as a block of text in the prompt for the LLM.
-    json.dumps(processed_space_context_for_prompt)[1:-1]
+    processed_space_context_for_prompt # Embed directly, preserving its structure
 }
+Threshold Prediction for this space: {threshold_prediction}
+Green Prediction for this space: {green_prediction}
+Usability Prediction for this space: {usability_prediction}
 """
             }
         ]
