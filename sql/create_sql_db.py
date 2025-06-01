@@ -1,8 +1,8 @@
 import sqlite3
 import pandas as pd
 
-excel_file_path = 'sql/example.xlsx'
-conn = sqlite3.connect('sql/example.db')
+excel_file_path = 'sql/gh_data.xlsx'
+conn = sqlite3.connect('sql/gh_data.db')
 cursor = conn.cursor()
 
 def drop_all_tables(cursor):

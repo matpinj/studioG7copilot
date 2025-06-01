@@ -10,7 +10,9 @@ user_question = "How many gardener households are on level1?"
 # --- Load SQL Database ---
 db_path = "sql/example.db"
 db_schema = get_dB_schema(db_path)
-
+print("Tables found in schema:", list(db_schema.keys()))
+for table, columns in db_schema.items():
+    print(f"Table '{table}' columns: {columns}")
 # --- Try to extract table name directly from question ---
 table_names = list(db_schema.keys())
 explicit_table = None

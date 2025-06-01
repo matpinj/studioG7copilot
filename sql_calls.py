@@ -76,6 +76,7 @@ def execute_sql_query(dB_path, sql_query):
 
 # Execute and self-debug sql queries
 def fetch_sql(sql_query, dB_context, user_question, dB_path):
+    sql_result = None  # <-- Ensure it's always defined
     attempt = 1
     max_retries = 3
     atempted_queries = []
