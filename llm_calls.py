@@ -1,6 +1,10 @@
 from server.config import *
 import re
+import pandas as pd
 ##test
+
+
+
 
 # Create a SQL query from user question
 def generate_sql_query(dB_context: str, retrieved_descriptions: str, user_question: str) -> str:
@@ -72,6 +76,37 @@ def build_answer(sql_query: str, sql_result: str, user_question: str) -> str:
     )
     return response.choices[0].message.content
 
+def classify_input(message):
+    response = client.chat.completions.create(
+        model=completion_model,
+        messages=[
+            {
+                "role": "system",
+                "content": """
+                        Your task is to classify if the user message is related to buildings and architecture or not.
+                        Output only the classification string.
+                        If it is related, output "True", if not, output "False".
+
+                        # Example #
+                        User message: "How do I bake cookies?"
+                        Output: "False"
+
+                        User message: "What is the tallest skyscrapper in the world?"
+                        Output: "True"
+                        """,
+            },
+            {
+                "role": "user",
+                "content": f"""
+                        {message}
+                        """,
+            },
+        ],
+    )
+    return response.choices[0].message.content
+
+
+
 # Fix an SQL query that has failed
 def fix_sql_query(dB_context: str, user_question: str, atempted_queries: str, exceptions: str) -> str:
 
@@ -131,3 +166,100 @@ def fix_sql_query(dB_context: str, user_question: str, atempted_queries: str, ex
         return match.group(1).strip()
     else:
         return None
+
+
+
+def suggest_geometric_variations(space_id: str, user_profile: str, space_context: str) -> str:
+    response = client.chat.completions.create(
+        model=completion_model,
+        temperature=0.4, # Lowered temperature for more deterministic and rule-adherent JSON output
+        messages=[
+            
+                {
+                "role": "system",
+                "content": """
+You are an expert architectural design assistant.
+Your task is to suggest 2 relevant geometric variations for a given outdoor space, tailored to a specific user profile and the existing space details.
+
+IMPORTANT: Each suggestion MUST be an application of EXACTLY ONE of the 6 "Possible Actions" listed below. Do not invent new types of actions or combine actions into one suggestion.
+
+You must choose from the following list of possible actions to base your suggestions on. For each chosen action, make the specified decisions and provide a detailed description of its application.
+
+Possible Actions:
+1.  **Extend Slab**: Extend an existing slab. You must decide the new area (not more than 50% of original or 5 sqm, whichever is smaller) and suggest a purpose or direction for the extension.
+2.  **Artificial Terrain**: Modify the ground plane. You must decide whether to excavate (e.g., for a sunken seating area) or create a small hill/mound, and suggest its general form and purpose.
+3.  **Outdoor Cooking Feature**: Add a space for a kitchen or fire pit. You must decide between a kitchen setup (e.g., counter, sink, grill) or a fire pit, and suggest its placement and materials.
+4.  **Small Open Pavilion**: Add a small, open-sided pavilion. It should cover no more than 50% of the existing space's area. You must decide its primary use (e.g., shaded lounge, outdoor dining, yoga deck) and suggest a simple structural form.
+5.  **Significant Planting**: Introduce permanent large trees or substantial vegetation. You must decide on the general type of vegetation (e.g., shade trees, screening shrubs, a themed garden bed) and suggest their placement.
+6.  **Water Feature**: Add a water feature integrated into the floor/ground. It should cover no more than 30% of the existing space's area. You must decide if it's a linear feature (e.g., rill, narrow channel) or a more contained circular/organic shape, and suggest its character (e.g., reflective pool, bubbling fountain).
+
+For each suggested variation:
+- The `variation_type` MUST be one of the exact names from the "Possible Actions" list (e.g., "Extend Slab", "Artificial Terrain").
+- The `variation_name` should be a concise, descriptive title for the specific application of the chosen `variation_type` (e.g., "Extended Seating Area", "Sunken Fire Pit Lounge").
+- The `description` should detail how the chosen action from the 'Possible Actions' list is applied to the specific space. It MUST explicitly state all decisions made as required by that action's description (e.g., for 'Extend Slab', state the new area and confirm it meets constraints; for 'Outdoor Cooking Feature', state whether it's a kitchen or fire pit and describe its placement/materials).
+- The `reason_for_profile` should explain why this variation is suitable for the given user profile and space context.
+- The `estimated_impact` should describe the likely effect (e.g., "Creates a new social hub", "Enhances tranquility and biodiversity").
+
+Your entire response MUST be ONLY the valid JSON object described below. Do not include any other text, explanations, or markdown formatting (like ```json).
+
+The JSON object should have the following structure:
+```json
+{
+  "space_id": "string",
+  "space_details": "string (details of the space as provided in the input)",
+  "user_profile": "string",
+  "suggestions": [
+    {
+      "variation_type": "string (must be one of the 6 Possible Actions)",
+      "variation_name": "string",
+      "description": "string",
+      "reason_for_profile": "string",
+      "estimated_impact": "string"
+    }
+  ],
+  "summary_reasoning": "string (overall reasoning for the set of suggestions)"
+}
+```
+
+Example for a "Play Area" space_id and "Families with Young Children" user_profile:
+{
+  "space_id": "O2",
+  "space_details": "Type: Courtyard\\nArea: 50sqm\\nOrientation: South\\nFeatures: Paved, one tree",
+  "user_profile": "Families with Young Children",
+  "suggestions": [
+    {
+      "variation_type": "Artificial Terrain",
+      "variation_name": "Play Mound with Slide",
+      "description": "Create a soft-surfaced, circular mound approximately 1m high in the northeast corner of the courtyard. Integrate a short, curved slide and rubber safety surfacing around the base.",
+      "reason_for_profile": "Children benefit from interactive, varied terrain that promotes climbing, sliding, and imaginative play within safe boundaries.",
+      "estimated_impact": "Improves active play and spatial variety"
+    },
+    {
+      "variation_type": "Extend Slab",
+      "variation_name": "Scoot Track Extension",
+      "description": "Extend the existing slab by 4 sqm to the south, forming a looped pathway with smooth concrete finish suitable for scooters, tricycles, or toy vehicles.",
+      "reason_for_profile": "Encourages gross motor development and safe wheeled play for toddlers and young children in a controlled environment.",
+      "estimated_impact": "Expands physical play and mobility"
+    }
+  ],
+  "summary_reasoning": "The selected sub-variations create a multi-sensory play environment, integrating movement and safety while maximizing the courtyard’s size and sun exposure for families with young children."
+}
+
+
+ Ensure the output is only the JSON object. The value for "space_details" should be the exact string provided in the "Space Details" section of the user input.
+ """
+             },
+
+            {
+                "role": "user",
+                "content": f"""
+Generate geometric variations for the following:
+Space ID: {space_id}
+User Profile: {user_profile}
+Space Details:
+{space_context}
+"""
+            }
+        ]
+    )
+    return response.choices[0].message.content
