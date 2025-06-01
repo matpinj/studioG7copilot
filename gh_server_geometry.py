@@ -189,5 +189,6 @@ def suggest_geometric_variations_route():
 ##~~GEOMETRIC VARIATIONS FROM LLM AND SQL~~##
 
 
+
 if __name__ == '__main__':
     app.run(debug=True)
