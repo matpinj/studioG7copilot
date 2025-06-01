@@ -26,8 +26,11 @@ def get_vectors(question_vector, index_lib, n_results):
     scores = []
     for vector in index_lib:
         score = similarity(question_vector, vector['vector'])
-        scores.append({'content': vector['content'], 'score': score, "name": vector['name']})
-
+        scores.append({
+            'content': vector['content'],
+            'score': score,
+            "name": vector.get('name', '')  # Use empty string if 'name' is missing
+        })
     scores.sort(key=lambda x: x['score'], reverse=True)
     best_vectors = scores[0:n_results]
     return best_vectors
@@ -63,4 +66,18 @@ def sql_rag_call(question, embeddings, n_results):
     relevant_description = "\n".join([vector['content'] for vector in scored_vectors])
 
     return relevant_name, relevant_description
+
+def answer_from_knowledge(user_message, embeddings, n_results=5):
+    """
+    Retrieve the most relevant knowledge chunks and return their content as a single answer string.
+    """
+    # Embed the user question
+    question_vector = get_embedding(user_message)
+    # Load the knowledge embeddings
+    index_lib = load_embeddings(embeddings)
+    # Retrieve the best vectors
+    scored_vectors = get_vectors(question_vector, index_lib, n_results)
+    # Concatenate the most relevant contents
+    answer = "\n\n".join([vector['content'] for vector in scored_vectors])
+    return answer
 

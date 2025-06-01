@@ -23,7 +23,7 @@ type: type of open space, based on area (e.g. balcony, terrace)
 orientation: Cardinal direction (e.g., N, SW, SE)
 height: Height of the space (meters)
 area: Area of the space (square meters)
-level: The building level/floor where the space is located (e.g., 1, 2, 3, ...)
+level: Building level/floor where the space is located
 open_side: Number of open sides
 in_out: Indicates if the space is indoor or outdoor
 wind_exp: Wind exposure
@@ -64,13 +64,3 @@ resident_key: H34, resident_persona: gardeners/food_lovers, resident_population:
 resident_key: H67, resident_persona: travelers/expats, resident_population: 1, level: 2, age: 57, tenant/owner: tenant
 resident_key: H80, resident_persona: diy_enthusiasts/creatives, resident_population: 1, level: 2, age: 34, tenant/owner: owner
 Typical use: Find out which households live on level 1,2 or X, their demographic type and number of people living in, their age, ownership. Useful for analyzing community needs, planning amenities, or understanding the distribution of household types and activities on this level.
-
-
-Table: resident_distances
-Description: This table provides data about residents` distances (H1,H2,...)  to Outdoor Spaces (O1,O2,...).
-Note: The number of resident columns (H1, H2, ...) and outdoor spaces (O1, O2, ...) can vary.
-Columns: Outdoor Space, H1, H2, ... (continues for all outdoor spaces but some of them has no relationship with some of outdoor spaces and their column is empty)
-Example rows:
-Outdoor Space: O1, H1: 7.5, H2: 1, H3: 1, H4: 51, ... (continues for all residents)
-Outdoor Space: O2, H1: 15.5, H2: 7, H3 4, H4: 5.5, ... (continues for all residents)
-
