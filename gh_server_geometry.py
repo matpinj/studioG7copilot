@@ -113,8 +113,8 @@ def suggest_geometric_variations_route():
   
 
     space_id = data.get('space_id')
-    # Default to 'default_profile' if not provided, or make it mandatory
-    user_profile = data.get('user_profile', 'young_entrepreneurs') 
+    # Expect resident_key instead of user_profile for geometric suggestions
+    resident_key = data.get('resident_key') 
 
     if not data:
         return jsonify({"error": "Request body must be JSON."}), 400
@@ -137,10 +137,12 @@ def suggest_geometric_variations_route():
 
     elif space_id:
         # Path 2: Suggest geometric variations
-        # user_profile is already fetched above with a default
+        if not resident_key:
+            return jsonify({"error": "Missing 'resident_key' when 'space_id' is provided for geometric suggestions."}), 400
+        
         # This functionality comes from get_intelligent_geometric_suggestions in geometry_orchestrator.py
         try:
-            suggestions_json_str = get_intelligent_geometric_suggestions(space_id, user_profile)
+            suggestions_json_str = get_intelligent_geometric_suggestions(space_id, resident_key)
                 
             # Attempt to extract JSON if wrapped in markdown or has leading/trailing text
             cleaned_json_str = suggestions_json_str # Default to original string
@@ -155,12 +157,24 @@ def suggest_geometric_variations_route():
                 if match_object:
                     cleaned_json_str = match_object.group(1)
             
-            # Specifically address the observed issue where LLM might output '\ n'
-            # instead of a proper '\n' for newlines in the space_details string.
+            # Clean up common LLM-introduced errors in string values:
+            # 1. '\ n' -> '\n' (handles extra space after newline escape)
+            # 2. '\ ' -> ' ' (removes invalid backslash-space escape if it's not part of a valid sequence like \n, \t, \\, \", etc.)
+            #    This is a bit broad, but targets the observed '\ edge_count' issue.
+            #    A more precise regex might be needed if this causes issues with legitimate escaped backslashes.
             cleaned_json_str = cleaned_json_str.replace('\\ n', '\\n')
+            cleaned_json_str = re.sub(r'\\ (?=[a-zA-Z_])', ' ', cleaned_json_str) # Replace '\ ' with ' ' if followed by a letter or underscore
+
+            # New, more general cleaning for invalid escapes:
+            # This regex looks for a backslash followed by any character that is NOT
+            # one of the valid JSON escape sequence characters (b, f, n, r, t, u, ", \, /).
+            # It replaces "\x" (where x is invalid) with "x".
+            # This aims to fix issues like an erroneous "\=" or "\." etc.
+            cleaned_json_str = re.sub(r'\\([^bfnrtu"\\\/])', r'\1', cleaned_json_str)
+
+            
             
             suggestions_data = json.loads(cleaned_json_str) # Parse the cleaned or original string
-            app.logger.info(f"Successfully parsed JSON for space_id {space_id}")
             return jsonify(suggestions_data), 200
         except json.JSONDecodeError as e:
             # Log the raw string and the cleaned attempt
@@ -174,7 +188,7 @@ def suggest_geometric_variations_route():
             return jsonify({"error": f"Failed to suggest geometric variations: {str(e)}"}), 500
     else:
         # Neither 'question' nor 'space_id' was provided
-        return jsonify({"error": "Invalid request. Provide 'question' for SQL query, or 'space_id' (and optionally 'user_profile') for geometric suggestions."}), 400
+        return jsonify({"error": "Invalid request. Provide 'question' for SQL query, or 'space_id' and 'resident_key' for geometric suggestions."}), 400
 
  
 ##~~GEOMETRIC VARIATIONS FROM LLM AND SQL~~##

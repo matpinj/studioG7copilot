@@ -170,19 +170,26 @@ def fix_sql_query(dB_context: str, user_question: str, atempted_queries: str, ex
 
 
 
-def suggest_geometric_variations(
+def suggest_geometric_variations( # type: ignore
     space_id: str, 
-    user_profile: str, 
+    resident_persona: str, 
     space_context: str, 
     green_prediction: str, 
     threshold_prediction: str, 
-    usability_prediction: str) -> str:
-    # Pre-process space_context to handle backslashes for LLM consumption.
-    # If the LLM tends to convert '\\' (double backslash) in its input prompt
-    # to a single backslash '\' in its JSON string output, this pre-processing aims to compensate.
-    # Raw backslash '\' in space_context becomes '\\' (Python string literal for a single backslash).
-    # This '\\' is then processed by json.dumps.
-    processed_space_context_for_prompt = space_context.replace('\\', '\\\\')
+    usability_prediction: str,
+    distance_to_space: str,
+    activity_weights_for_resident: str,
+    current_activity_in_space: str # New parameter
+) -> str:
+    # Pre-process space_context to be a JSON-valid string content.
+    # This escapes newlines (e.g., \n to \\n), quotes (e.g., " to \"),
+    # and backslashes (e.g., \ to \\) so that if the LLM copies it verbatim
+    # into the "space_details" field of its JSON output, it will be valid.
+    if space_context:
+        processed_space_context_for_prompt = json.dumps(space_context)[1:-1]
+    else:
+        processed_space_context_for_prompt = ""
+
     response = client.chat.completions.create(
         model=completion_model,
         temperature=0.2, # Lowered temperature for more deterministic and rule-adherent JSON output
@@ -191,7 +198,7 @@ def suggest_geometric_variations(
                 "role": "system",
                 "content": """
 You are an expert architectural design assistant.
-Your task is to suggest 2 relevant geometric variations for a given outdoor space, tailored to a specific user profile and the existing space details.
+Your task is to suggest 2 relevant geometric variations for a given outdoor space, tailored to a specific resident's persona, their preferences for this space, their distance to it, and the existing space details.
 
 IMPORTANT: Each suggestion MUST be an application of EXACTLY ONE of the 6 "Possible Actions" listed below. Do not invent new types of actions or combine actions into one suggestion.
 
@@ -209,7 +216,7 @@ For each suggested variation:
 - The `variation_type` MUST be one of the exact names from the "Possible Actions" list (e.g., "Extend Slab", "Artificial Terrain").
 - The `variation_name` should be a concise, descriptive title for the specific application of the chosen `variation_type` (e.g., "Extended Seating Area", "Sunken Fire Pit Lounge").
 - The `description` should detail how the chosen action from the 'Possible Actions' list is applied to the specific space. It MUST explicitly state all decisions made as required by that action's description (e.g., for 'Extend Slab', state the new area and confirm it meets constraints; for 'Outdoor Cooking Feature', state whether it's a kitchen or fire pit and describe its placement/materials).
-- The `reason_for_profile` should explain why this variation is suitable for the given user profile and space context.
+- The `reason_for_profile` should explain why this variation is suitable for the given resident's persona, their preferences, their distance, and the space context.
 - The `estimated_impact` should describe the likely effect (e.g., "Creates a new social hub", "Enhances tranquility and biodiversity").
 
 Your entire response MUST be ONLY the valid JSON object described below. Do not include any other text, explanations, or markdown formatting (like ```json).
@@ -219,7 +226,9 @@ The JSON object should have the following structure:
 {
   "space_id": "string",
   "space_details": "string (details of the space as provided in the input)",
-  "user_profile": "string",
+  "user_profile": "string (this should be the resident_persona provided in the input)",
+  "resident_distance_to_space": "string (resident's distance to this specific space, as provided in input)",
+  "current_activity_in_space": "string (current activity assigned to this space, as provided in input)",
   "suggestions": [
     {
       "variation_type": "string (must be one of the 6 Possible Actions)",
@@ -238,6 +247,8 @@ Example for a "Play Area" space_id and "Families with Young Children" user_profi
   "space_id": "O2",
   "space_details": "Type: Courtyard\\nArea: 50sqm\\nOrientation: South\\nFeatures: Paved, one tree",
   "user_profile": "Families with Young Children",
+  "resident_distance_to_space": "15.2m",
+  "current_activity_in_space": "Playground",
   "suggestions": [
     {
       "variation_type": "Artificial Terrain",
@@ -266,7 +277,10 @@ Example for a "Play Area" space_id and "Families with Young Children" user_profi
                 "content": f"""
 Generate geometric variations for the following:
 Space ID: {space_id}
-User Profile: {user_profile}
+Resident Persona (User Profile): {resident_persona}
+Resident's Distance to this Space: {distance_to_space}
+Resident's Activity Preferences for this space (weights): {activity_weights_for_resident}
+Current Activity in this Space: {current_activity_in_space}
 Space Details:
 {
     processed_space_context_for_prompt # Embed directly, preserving its structure
