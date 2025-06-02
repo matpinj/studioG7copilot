@@ -3,6 +3,7 @@ sys.path.insert(0, 'C:\\Users\\Matea\\Documents\\IAAC\\3\\studio\\SQL\\LLM-SQL-R
 import numpy as np
 import json
 from server.config import *
+from server.config import client, completion_model 
 
 # This script is only used as a RAG tool for other scripts.
 
@@ -67,17 +68,30 @@ def sql_rag_call(question, embeddings, n_results):
 
     return relevant_name, relevant_description
 
-def answer_from_knowledge(user_message, embeddings, n_results=5):
-    """
-    Retrieve the most relevant knowledge chunks and return their content as a single answer string.
-    """
-    # Embed the user question
+def answer_from_knowledge(user_message, embedding_file, conversation_history=None, n_results=3):
     question_vector = get_embedding(user_message)
-    # Load the knowledge embeddings
-    index_lib = load_embeddings(embeddings)
-    # Retrieve the best vectors
+    index_lib = load_embeddings(embedding_file)
     scored_vectors = get_vectors(question_vector, index_lib, n_results)
-    # Concatenate the most relevant contents
-    answer = "\n\n".join([vector['content'] for vector in scored_vectors])
-    return answer
+    context = "\n\n".join([vector['content'] for vector in scored_vectors])
+
+    prompt = (
+        "You are an expert assistant. Using ONLY the information below and the conversation so far, "
+        "answer the user's question in a concise, reasoned, and human-like way. "
+        "If the answer is not directly available, say so honestly.\n\n"
+        f"Information:\n{context}\n"
+    )
+
+    # Build messages for the LLM
+    messages = [{"role": "system", "content": prompt}]
+    if conversation_history:
+        messages.extend(conversation_history)
+    messages.append({"role": "user", "content": user_message})
+
+    response = client.chat.completions.create(
+        model=completion_model,
+        messages=messages,
+        temperature=0.4,
+        max_tokens=256,
+    )
+    return response.choices[0].message.content.strip()
 

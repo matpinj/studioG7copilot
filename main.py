@@ -5,17 +5,27 @@ from sql_main import answer_sql_question
 from question_router import route_question         
 import json
 
-user_message = input("Ask your question: ")
-route, embedding_file = route_question(user_message)
+conversation_history = []
 
-if route == "sql":
-    answer = answer_sql_question(user_message)
-elif route == "knowledge":
-    answer = answer_from_knowledge(user_message, embedding_file)
-else:
-    answer = "Sorry, I can't answer that."
+while True:
+    user_message = input("Ask your question: ")
+    if user_message.lower() in ["exit", "quit"]:
+        break
 
-print(answer)
+    conversation_history.append({"role": "user", "content": user_message})
+    route, embedding_file = route_question(user_message)
+
+    if route == "sql":
+        answer = answer_sql_question(user_message)
+        conversation_history.append({"role": "assistant", "content": f"(SQL Result)\n{answer}"})
+    elif route == "knowledge":
+        answer = answer_from_knowledge(user_message, embedding_file, conversation_history)
+        conversation_history.append({"role": "assistant", "content": answer})
+    else:
+        answer = "Sorry, I can't answer that."
+        conversation_history.append({"role": "assistant", "content": answer})
+
+    print(answer)
 
 # ### EXAMPLE 1: Router #"##
 # # Classify the user message to see if we should answer or not
