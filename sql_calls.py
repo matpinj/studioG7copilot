@@ -60,15 +60,18 @@ def format_dB_context(ifc_sql_dB, filtered_dB_schema: str) -> str:
     return chunks
 
 # Run an SQL query against the database
-def execute_sql_query(dB_path, sql_query):
+def execute_sql_query(dB_path, sql_query, params=None):
     # Connect to the SQLite database
     conn = sqlite3.connect(dB_path)
     cursor = conn.cursor()
 
     # Execute the SQL query
-    cursor.execute(sql_query)
+    if params:
+        cursor.execute(sql_query, params)
+    else:
+        cursor.execute(sql_query)
     result = cursor.fetchall()
-
+    
     # Close the connection
     conn.close()
 
