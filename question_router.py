@@ -1,4 +1,6 @@
+import json
 from server.config import client, completion_model
+
 
 def classify_knowledge_topic(user_message):
     prompt = (
@@ -27,18 +29,78 @@ def classify_knowledge_topic(user_message):
     }
     return topic_to_file.get(topic, "knowledge/outdoor comfort research issues.json")
 
+
 def route_question(user_message):
-    q = user_message.lower()
+    routing_prompt = f"""
+You are a smart question router for an architectural assistant.
 
-    # SQL keywords
-    sql_keywords = [
-        "how many", "list", "count", "which", "find", "select", "where", "number of", "total", "show",
-        "bedroom", "units", "residents", "activity space", "level", "apartment", "household", "population",
-        "orientation", "area", "privacy", "usability", "green_suitability", "compactness", "core distance"
-    ]
-    if any(kw in q for kw in sql_keywords):
-        return "sql", None
+Instructions:
+- Split the user question into smaller parts if it includes multiple intents.
+- For each part, classify whether it should be answered using:
+  - "sql": for structured database queries (quantitative, factual)
+  - "knowledge": for architectural theory, trends, or qualitative advice
 
-    # Otherwise, use LLM to classify knowledge topic
-    embedding_file = classify_knowledge_topic(user_message)
-    return "knowledge", embedding_file
+Return only a JSON object like this:
+{{
+  "parts": [
+    {{ "text": "first part of the question", "destination": "sql" }},
+    {{ "text": "second part", "destination": "knowledge" }}
+  ]
+}}
+
+⚠️ Only split real parts of the user's question. Do NOT make up content.
+⚠️ Use lowercase values: "sql" or "knowledge" only.
+
+User question: \"{user_message}\"
+"""
+
+    try:
+        response = client.chat.completions.create(
+            model=completion_model,
+            messages=[
+                {"role": "system", "content": routing_prompt}
+            ],
+            temperature=0.0,
+            max_tokens=300
+        )
+
+        content = response.choices[0].message.content.strip()
+        routing_data = json.loads(content)
+
+        if "parts" not in routing_data:
+            raise ValueError("Missing 'parts' in LLM response")
+
+        results = []
+        for part in routing_data.get("parts", []):
+            text = part.get("text", "").strip()
+            destination = part.get("destination", "").strip().lower()
+
+            if destination == "sql":
+                results.append({"destination": "sql", "text": text})
+
+            elif destination == "knowledge":
+                embedding_file = classify_knowledge_topic(text)
+                results.append({
+                    "destination": "knowledge",
+                    "text": text,
+                    "embedding_file": embedding_file
+                })
+
+        return results  # list of parts with routing info
+
+    except (json.JSONDecodeError, ValueError, Exception) as e:
+        print("Routing error:", e)
+        # fallback: treat whole question as knowledge
+        fallback_file = classify_knowledge_topic(user_message)
+        return [{
+            "destination": "knowledge",
+            "text": user_message,
+            "embedding_file": fallback_file
+        }]
+
+
+# Example usage for testing
+if __name__ == "__main__":
+    example_question = "How many apartments have a balcony, and what are the best design strategies for balconies?"
+    result = route_question(example_question)
+    print(json.dumps(result, indent=2))
