@@ -7,7 +7,7 @@ import re
 def answer_sql_question(user_question):
 
     # --- Load SQL Database ---
-    db_path = "sql/example.db"
+    db_path = "sql/gh_data.db"
     db_schema = get_dB_schema(db_path)
     print("Tables found in schema:", list(db_schema.keys()))
     for table, columns in db_schema.items():

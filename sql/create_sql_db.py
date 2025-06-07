@@ -1,7 +1,7 @@
 import sqlite3
 import pandas as pd
 
-excel_file_path = 'gh_data/studio_gh_data.xlsx'
+excel_file_path = 'sql/gh_data.xlsx'
 conn = sqlite3.connect('sql/gh_data.db')
 cursor = conn.cursor()
 

@@ -35,21 +35,41 @@ def route_question(user_message):
 You are a smart question router for an architectural assistant.
 
 Instructions:
-- Split the user question into smaller parts if it includes multiple intents.
-- For each part, classify whether it should be answered using:
-  - "sql": for structured database queries (quantitative, factual)
-  - "knowledge": for architectural theory, trends, or qualitative advice
+- For each user question, classify whether it should be answered using:
+  - "sql": for structured database queries (quantitative, factual, count, list, number, existence, or anything that can be answered directly from a database table), If the question asks for a list of categories, types, names, or entities that exist in the database, use "sql".
+  - "knowledge": for architectural theory, trends, qualitative advice, explanations, or anything that requires external knowledge or reasoning, If the question asks for an explanation or description, use "knowledge".
 
 Return only a JSON object like this:
 {{
-  "parts": [
-    {{ "text": "first part of the question", "destination": "sql" }},
-    {{ "text": "second part", "destination": "knowledge" }}
-  ]
+  "destination": "sql",  // or "knowledge"
+  "text": "the original question"
 }}
 
-⚠️ Only split real parts of the user's question. Do NOT make up content.
-⚠️ Use lowercase values: "sql" or "knowledge" only.
+Examples:
+Q: "How many residents are in the building?"
+A: "sql"
+Q: "List all apartments with balconies."
+A: "sql"
+Q: "What is the average temperature in outdoor spaces?"
+A: "sql"
+Q: "Explain the benefits of co-living."
+A: "knowledge"
+Q: "Describe the design trends for shared kitchens."
+A: "knowledge"
+Q: "How many activity spaces are there in level 1?"
+A: "sql"
+Q: "What are the most popular activities in outdoor spaces?"
+A: "sql"
+Q: "Why is thermal comfort important?"
+A: "knowledge"
+Q: "What are resident persona types?"
+A: "sql"
+Q: "List all resident persona types."
+A: "sql"
+Q: "Explain resident persona types."
+A: "knowledge"
+Q: "Describe resident persona types."
+A: "knowledge"
 
 User question: \"{user_message}\"
 """
@@ -61,32 +81,27 @@ User question: \"{user_message}\"
                 {"role": "system", "content": routing_prompt}
             ],
             temperature=0.0,
-            max_tokens=300
+            max_tokens=100
         )
 
         content = response.choices[0].message.content.strip()
+        print("LLM routing output:", content)  # For debugging
         routing_data = json.loads(content)
 
-        if "parts" not in routing_data:
-            raise ValueError("Missing 'parts' in LLM response")
+        destination = routing_data.get("destination", "").strip().lower()
+        text = routing_data.get("text", "").strip()
 
-        results = []
-        for part in routing_data.get("parts", []):
-            text = part.get("text", "").strip()
-            destination = part.get("destination", "").strip().lower()
-
-            if destination == "sql":
-                results.append({"destination": "sql", "text": text})
-
-            elif destination == "knowledge":
-                embedding_file = classify_knowledge_topic(text)
-                results.append({
-                    "destination": "knowledge",
-                    "text": text,
-                    "embedding_file": embedding_file
-                })
-
-        return results  # list of parts with routing info
+        if destination == "sql":
+            return [{"destination": "sql", "text": text}]
+        elif destination == "knowledge":
+            embedding_file = classify_knowledge_topic(text)
+            return [{
+                "destination": "knowledge",
+                "text": text,
+                "embedding_file": embedding_file
+            }]
+        else:
+            raise ValueError("Invalid destination in LLM response")
 
     except (json.JSONDecodeError, ValueError, Exception) as e:
         print("Routing error:", e)
