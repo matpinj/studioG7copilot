@@ -7,25 +7,46 @@ import json
 
 conversation_history = []
 
+def print_answer(label, answer):
+    print(f"\n[{label.upper()} RESULT]")
+    print(answer)
+    print("-" * 50)
+
 while True:
     user_message = input("Ask your question: ")
     if user_message.lower() in ["exit", "quit"]:
         break
 
+    # Add user message to conversation history
     conversation_history.append({"role": "user", "content": user_message})
-    route, embedding_file = route_question(user_message)
 
-    if route == "sql":
-        answer = answer_sql_question(user_message)
-        conversation_history.append({"role": "assistant", "content": f"(SQL Result)\n{answer}"})
-    elif route == "knowledge":
-        answer = answer_from_knowledge(user_message, embedding_file, conversation_history)
-        conversation_history.append({"role": "assistant", "content": answer})
-    else:
-        answer = "Sorry, I can't answer that."
-        conversation_history.append({"role": "assistant", "content": answer})
+    # Route to parts: can be multiple (sql + knowledge)
+    routed_parts = route_question(user_message)
 
-    print(answer)
+    combined_answer = ""
+    for part in routed_parts:
+        destination = part["destination"]
+        part_text = part["text"]
+
+        if destination == "sql":
+            answer = answer_sql_question(part_text)
+            print_answer("sql", answer)
+            combined_answer += f"\n(SQL Answer for: \"{part_text}\")\n{answer}"
+        
+        elif destination == "knowledge":
+            embedding_file = part.get("embedding_file")
+            answer = answer_from_knowledge(part_text, embedding_file, conversation_history)
+            print_answer("knowledge", answer)
+            combined_answer += f"\n(Knowledge Answer for: \"{part_text}\")\n{answer}"
+        
+        else:
+            fallback = "Sorry, I couldn't understand that part."
+            print_answer("error", fallback)
+            combined_answer += f"\n(Error for: \"{part_text}\")\n{fallback}"
+
+    # Save the full assistant reply with labeled subanswers
+    conversation_history.append({"role": "assistant", "content": combined_answer.strip()})
+
 
 # ### EXAMPLE 1: Router #"##
 # # Classify the user message to see if we should answer or not
