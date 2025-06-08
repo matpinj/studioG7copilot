@@ -18,7 +18,7 @@ class RequestWorker(QThread):
 
     def run(self):
         try:
-            r = requests.post(self.endpoint, json=self.payload, timeout=10)
+            r = requests.post(self.endpoint, json=self.payload, timeout=20)
             data = r.json()
             self.finished.emit(data)
         except Exception as e:
@@ -101,6 +101,11 @@ class ChatTab(QWidget):
             self.show_geom_btn.clicked.connect(self.send_geometry_command)
             geom_layout.addWidget(self.show_geom_btn)
 
+            # Hide Selected Geometry button
+            self.hide_specific_btn = QPushButton("Hide")
+            self.hide_specific_btn.clicked.connect(self.hide_specific_geometry)
+            geom_layout.addWidget(self.hide_specific_btn)
+
             layout.addLayout(geom_layout)
 
         input_layout = QHBoxLayout()
@@ -179,8 +184,10 @@ class ChatTab(QWidget):
                 )
             else:
                 self.chat_display.append(f"<b>Error sending geometry command</b>")
+
         except Exception as e:
             self.chat_display.append(f"<b>Error:</b> {e}")
+
 
     def show_all_geometry(self):
         try:
@@ -199,18 +206,66 @@ class ChatTab(QWidget):
         except Exception as e:
             self.chat_display.append(f"<b>Error:</b> {e}")
 
+    def hide_all_geometry(self):
+        try:
+            r = requests.post("http://localhost:5000/set_geometry", json={"geometry_command": "hide_all"})
+            if r.status_code == 200:
+                self.chat_display.append("<b>All geometry hidden.</b>")
+            else:
+                self.chat_display.append("<b>Error hiding all geometry</b>")
+        except Exception as e:
+            self.chat_display.append(f"<b>Error:</b> {e}")
+
+    def hide_specific_geometry(self):
+        try:
+            r = requests.post("http://localhost:5000/set_geometry", json={"geometry_command": "hide_specific"})
+            if r.status_code == 200:
+                self.chat_display.append("<b>Selected geometry hidden.</b>")
+            else:
+                self.chat_display.append("<b>Error hiding selected geometry</b>")
+        except Exception as e:
+            self.chat_display.append(f"<b>Error:</b> {e}")
+
+class WelcomeTab(QWidget):
+    def __init__(self, info_text):
+        super().__init__()
+        layout = QVBoxLayout()
+        label = QLabel(info_text)
+        label.setWordWrap(True)
+        label.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+        label.setStyleSheet("font-size: 16px; padding: 20px;")
+        layout.addWidget(label)
+        self.setLayout(layout)
+
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Activity Copilot for Residentials")
-        self.resize(1200, 800)  # Set the window size here
+        self.setWindowTitle("Activity Copilot for Residents")
+        self.resize(1200, 800)
         layout = QVBoxLayout()
         tabs = QTabWidget()
 
-        # Adjust endpoints as needed
+        # Add Welcome tab first
+        welcome_text = (
+            "Welcome to Copilot for Residents!\n\n"
+            "This tool helps you explore, interact with, and ask questions about your building and its spaces.\n\n"
+            "• You can ask questions about general info, coliving, climate, and thermal comfort in the chat tabs.\n"
+            "• Use the General tab to show/hide all geometry or select specific levels and info.\n"
+            "• Use Space Q&A for space-related questions.\n"
+            "• Use Geometry/Negotiation for geometry suggestions.\n\n"
+            "Instructions:\n"
+            "1. Ask your questions in the chat box to get information about the building, coliving, or comfort.\n"
+            "2. Select options from the dropdowns and click 'Show' to display specific geometry.\n"
+            "3. Use 'Show All Building Geometry' to toggle all geometry on/off.\n"
+            "4. Use 'Hide' to hide selected geometry.\n"
+            "Enjoy exploring and learning about your building!"
+        )
+        tabs.addTab(WelcomeTab(welcome_text), "Welcome")
+
+        # Existing tabs
         tabs.addTab(ChatTab("http://localhost:5000/general_question"), "General")
         tabs.addTab(ChatTab("http://localhost:5001/space_question"), "Space Q&A")
-        tabs.addTab(ChatTab("http://localhost:5002/geometry_suggestion"), "Geometry/Negotiation")
+        tabs.addTab(ChatTab("http://localhost:5002/geometry_suggestion"), "Geometry")
 
         layout.addWidget(tabs)
         self.setLayout(layout)
@@ -258,7 +313,7 @@ if __name__ == "__main__":
             background: #fff;
             color: #111;
         }
-        QTextEdit, QLineEdit, QComboBox {
+        QTextEdit, QLineEdit {
             border-radius: 6px;
             padding: 6px;
             background-color: #111;
@@ -267,20 +322,50 @@ if __name__ == "__main__":
             font-family: 'Segoe UI', 'Arial', 'Helvetica Neue', 'sans-serif';
             font-size: 15px;
         }
+
+        QComboBox {
+            border-radius: 6px;
+            padding: 2px 24px 2px 8px; /* top right bottom left, more space for arrow */
+            background-color: #111;
+            color: #eee;
+            border: 1px solid #888;
+            font-family: 'Segoe UI', 'Arial', 'Helvetica Neue', 'sans-serif';
+            font-size: 15px;
+            min-width: 0px;
+            max-width: 140px; /* optional: limit width */
+        }
+
+        QComboBox::drop-down {
+            subcontrol-origin: padding;
+            subcontrol-position: top right;
+            width: 22px;
+            border-left: 1px solid #888;
+            border-top-right-radius: 6px;
+            border-bottom-right-radius: 6px;
+            background: #222;
+        }
+
+        QComboBox QAbstractItemView {
+            border-radius: 6px;
+            background: #222;
+            color: #eee;
+            selection-background-color: #444;
+            selection-color: #fff;
+        }
+
         QPushButton {
             border-radius: 8px;
-            padding: 8px 18px;
+            padding: 8px 15px;
             background-color: #fff;
             color: #222;
             font-weight: bold;
             font-family: 'Segoe UI', 'Arial', 'Helvetica Neue', 'sans-serif';
             font-size: 15px;
-            border: 2px solid #bbb;
         }
         QPushButton:hover {
             background-color: #e0e0e0;
+            padding: 8px 15px;
             color: #111;
-            border: 2px solid #888;
         }
         QCheckBox {
             spacing: 8px;

@@ -71,8 +71,11 @@ def sql_rag_call(question, embeddings, n_results):
 MAX_HISTORY = 10  # or whatever fits your model/context window
 
 def answer_from_knowledge(user_message, embedding_file, conversation_history=None, n_results=3):
+    print("Getting embedding...")
     question_vector = get_embedding(user_message)
+    print("Loading embeddings...")
     index_lib = load_embeddings(embedding_file)
+    print("Getting vectors...")
     scored_vectors = get_vectors(question_vector, index_lib, n_results)
     context = "\n\n".join([vector['content'] for vector in scored_vectors])
 
@@ -83,18 +86,18 @@ def answer_from_knowledge(user_message, embedding_file, conversation_history=Non
         f"Information:\n{context}\n"
     )
 
-    # Build messages for the LLM
     messages = [{"role": "system", "content": prompt}]
     if conversation_history:
-        # Only include the last MAX_HISTORY messages
         messages.extend(conversation_history[-MAX_HISTORY:])
     messages.append({"role": "user", "content": user_message})
 
+    print("Calling LLM...")
     response = client.chat.completions.create(
         model=completion_model,
         messages=messages,
         temperature=0.4,
         max_tokens=256,
     )
+    print("LLM response received.")
     return response.choices[0].message.content.strip()
 

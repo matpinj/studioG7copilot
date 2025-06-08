@@ -4,6 +4,7 @@ from utils.rag_utils import answer_from_knowledge
 from sql_main import answer_sql_question  
 from question_router import route_question         
 import json
+import time
 
 from flask import Flask, request, jsonify
 
@@ -43,8 +44,9 @@ app = Flask(__name__)
 
 @app.route('/general_question', methods=['POST'])
 def handle_general_question():
-    print("Received request!")
     try:
+        start = time.time()
+        print("Received question request")
         data = request.get_json()
         print("Data received:", data)
         user_message = data.get('question', '')
@@ -52,6 +54,7 @@ def handle_general_question():
         answer = answer_general_question(user_message, conv_hist)
         conv_hist.append({"role": "user", "content": user_message})
         conv_hist.append({"role": "assistant", "content": answer})
+        print("Returning response, elapsed:", time.time() - start, "seconds")
         return jsonify({'response': answer, 'conversation_history': conv_hist})
     except Exception as e:
         print("Error:", e)
@@ -61,13 +64,22 @@ def handle_general_question():
 def set_geometry():
     global geometry_command, geometry_all_visible
     data = request.get_json()
-    # Toggle if the command is "toggle_all"
     if data.get("geometry_command") == "toggle_all":
         geometry_all_visible = not geometry_all_visible
         geometry_command = {"geometry_command": "show_all" if geometry_all_visible else "hide_all"}
+        return jsonify({"status": "ok", "visible": geometry_all_visible})
+    elif data.get("geometry_command") == "show_all":
+        geometry_all_visible = True
+        geometry_command = {"geometry_command": "show_all"}
+        return jsonify({"status": "ok", "visible": True})
+    elif data.get("geometry_command") == "hide_all":
+        geometry_all_visible = False
+        geometry_command = {"geometry_command": "hide_all"}
+        return jsonify({"status": "ok", "visible": False})
     else:
+        # This is for specific geometry (level, space_info, apt_info)
         geometry_command = data
-    return jsonify({"status": "ok", "visible": geometry_all_visible})
+        return jsonify({"status": "ok"})
 
 @app.route('/get_geometry', methods=['GET'])
 def get_geometry():
