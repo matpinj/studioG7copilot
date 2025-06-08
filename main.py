@@ -10,6 +10,7 @@ from flask import Flask, request, jsonify
 conversation_history = []
 
 geometry_command = {"geometry_command": 0}
+geometry_all_visible = False
 
 def print_answer(label, answer):
     print(f"\n[{label.upper()} RESULT]")
@@ -58,10 +59,15 @@ def handle_general_question():
 
 @app.route('/set_geometry', methods=['POST'])
 def set_geometry():
-    global geometry_command
+    global geometry_command, geometry_all_visible
     data = request.get_json()
-    geometry_command = data
-    return jsonify({"status": "ok"})
+    # Toggle if the command is "toggle_all"
+    if data.get("geometry_command") == "toggle_all":
+        geometry_all_visible = not geometry_all_visible
+        geometry_command = {"geometry_command": "show_all" if geometry_all_visible else "hide_all"}
+    else:
+        geometry_command = data
+    return jsonify({"status": "ok", "visible": geometry_all_visible})
 
 @app.route('/get_geometry', methods=['GET'])
 def get_geometry():
