@@ -266,24 +266,26 @@ User: "I'm insistent to have activity X instead of activity Y, what do you sugge
 Response:
 {
   "action": "propose_activity_change",
-  "user_id": "H5",  # Example user ID
-  "current_activity": "Sunbath",    # Example current activity
-  "desired_activity": "Viewpoint",  # Example desired activity
+  "parameters": {
+    "user_id": "H5",  # Example user ID
+    "current_activity": "Sunbath",    # Example current activity
+    "desired_activity": "Viewpoint",  # Example desired activity
+  },
   "reasoning": "User wants to change the activity in their space."
 }
 
 User: "I want this activity and bigger area and south sun and more green. Is there any other people who would like to have my apartment and we can swap our houses?"
 Response:
 {
+  "action": "find_profile_swap",
   "parameters": {
-    "action": "find_profile_swap",
     "user_id": "H5",  # Example user ID
     "potential_swap_ids": ["H6", "H7"],  # Example potential swap user IDs
     "potential_swap_activities": ["Sunbath", "Green Corridor"],  # Example activities of potential swaps
     "current_activity": "Viewpoint",    # Example current activity
     "desired_features": ["bigger area", "south sun", "more green", "activity X"]
     },
-    "reasoning": "User wants to swap apartments with someone whose preferences match. I included the user ID to identify the user making the request, the potential swap IDs to specify who they could swap with, the current and potential activities to clarify the context, and the desired features to outline what the user is looking for in a swap."
+  "reasoning": "User wants to swap apartments with someone whose preferences match."
 }
 
 User: "I want activity X instead of Y but I don't want to move or change my apartment, what are my options?"
