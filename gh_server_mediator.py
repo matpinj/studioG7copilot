@@ -173,7 +173,7 @@ def llm_nearby_space_qna():
             conn = sqlite3.connect('sql/gh_data.db')
             distances = pd.read_sql_query("SELECT * FROM resident_distances", conn)
             conn.close()
-            assignments = pd.read_csv('llm_reasoning\llm_activity_assignments.csv')
+            assignments = pd.read_csv('llm_reasoning/llm_activity_assignments.csv')
             voting = pd.read_csv('resident_data/voting_weights.csv')
 
             if house_key not in distances.columns:
@@ -201,7 +201,7 @@ def llm_nearby_space_qna():
         distances = pd.read_sql_query("SELECT * FROM resident_distances", conn)
         conn.close()
         voting = pd.read_csv('resident_data/voting_weights.csv')
-        assignments = pd.read_csv('llm_reasoning\llm_activity_assignments.csv')
+        assignments = pd.read_csv('llm_reasoning/llm_activity_assignments.csv')
         personas = pd.read_csv('resident_data/personas.csv') if os.path.exists('resident_data/personas.csv') else None
 
         if house_key not in distances.columns:
