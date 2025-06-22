@@ -1,9 +1,14 @@
 import pandas as pd
 import json
+import sqlite3
+import os
 
 # Load all files
-distances = pd.read_csv("resident_data/resident_distances.csv")
-personas = pd.read_csv("resident_data/personas_assigned.csv")
+conn = sqlite3.connect('sql/gh_data.db')
+distances = pd.read_sql_query("SELECT * FROM resident_distances", conn)
+personas = pd.read_sql_query("SELECT * FROM personas_assigned", conn)
+conn.close()
+
 with open("preset/persona_activity.json") as f:
     persona_activities = json.load(f)
 

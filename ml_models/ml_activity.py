@@ -4,7 +4,7 @@ import pickle
 import tensorflow as tf
 
 # --- File paths ---
-INPUT_CSV = "building_data\geometry_data.csv"
+INPUT_CSV = "ml_models/activity_space_ml.csv"
 OUTPUT_CSV = "ml_models/threshold_predictions.csv"
 SCALER_PATH = "ml_models/scaler_ann_2405_01.pkl"
 MODEL_PATH = "ml_models/annmodel_2405_01.keras"

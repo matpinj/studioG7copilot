@@ -279,14 +279,12 @@ Resident's Distance to this Space: {distance_to_space}
 Resident's Activity Preferences for this space (weights): {activity_weights_for_resident}
 Current Activity in this Space: {current_activity_in_space}
 Space Details:
-{
-    processed_space_context_for_prompt # Embed directly, preserving its structure
-}
+{processed_space_context_for_prompt}
 Threshold Prediction for this space: {threshold_prediction}
 Green Prediction for this space: {green_prediction}
 Usability Prediction for this space: {usability_prediction}
 """
-            }
-        ]
-    )
+                }
+            ]
+        )
     return response.choices[0].message.content

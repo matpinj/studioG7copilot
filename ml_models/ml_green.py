@@ -9,10 +9,10 @@ import os
 locale.setlocale(locale.LC_ALL, 'en_US')
 
 # --- USER INPUT ---
-INPUT_CSV = "ml_models\\activity_space_ml.csv"
-output_csv_path = 'ml_models\\green_predictions.csv'
-scaler_path = 'ml_models\\gu_scaler.pkl'
-model_path = 'ml_models\\greenmodel_LR_2405_01.pkl'
+INPUT_CSV = "ml_models/activity_space_ml.csv"
+output_csv_path = 'ml_models/green_predictions.csv'
+scaler_path = 'ml_models/gu_scaler.pkl'
+model_path = 'ml_models/greenmodel_LR_2405_01.pkl'
 
 try:
     # STEP 1: Load and clean CSV text
