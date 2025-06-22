@@ -172,14 +172,19 @@ def suggest_geometric_variations( # type: ignore
     resident_persona: str, 
     space_context: str, 
     green_prediction: str, 
-    threshold_prediction: str, 
-    usability_prediction: str,
-    distance_to_space: str,
-    activity_weights_for_resident: str,
-    current_activity_in_space: str # New parameter
+    threshold_prediction: str,
+    usability_prediction: str, # type: ignore
+    distance_to_space: str, # type: ignore
+    activity_weights_for_resident: str, # type: ignore
+    current_activity_in_space: str,
+    studio_export_details: str, # Details from studio_export.csv for the space
+    user_question_for_suggestion: str, # Original user question asking for suggestions
+    desired_activity_for_space: str, # The activity the user wants the space to be good for
+    other_residents_summary: str # New: Summary of other residents who might benefit
+    
 ) -> str:
     # Pre-process space_context to be a JSON-valid string content.
-    # This escapes newlines (e.g., \n to \\n), quotes (e.g., " to \"),
+    # This escapes newlines (e.g., \n to \\n), quotes (e.g., " to \\"),
     # and backslashes (e.g., \ to \\) so that if the LLM copies it verbatim
     # into the "space_details" field of its JSON output, it will be valid.
     if space_context:
@@ -195,26 +200,49 @@ def suggest_geometric_variations( # type: ignore
                 "role": "system",
                 "content": """
 You are an expert architectural design assistant.
-Your task is to suggest 2 relevant geometric variations for a given outdoor space, tailored to a specific resident's persona, their preferences for this space, their distance to it, and the existing space details.
+Your task is to suggest 1 relevant geometric variation for a given outdoor space to make it more suitable for the `desired_activity_for_space`.
+This suggestion should be tailored to the specific resident's persona, their activity preferences for this space, their distance to it, the `desired_activity_for_space` they envision, the existing space details, and any relevant constraints or opportunities mentioned in `studio_export_details`.
+The `user_question_for_suggestion` is the query that prompted this request; use it to ensure your `summary_reasoning` and other descriptive fields are relevant.
+If the `user_question_for_suggestion` asks about other beneficiaries, use the `other_residents_summary` provided in the input to inform your `other_beneficiaries` list and the `summary_reasoning`. Explain WHY these other residents benefit, referencing the summarized information about their potential interest (e.g., proximity, preferences).
 
-IMPORTANT: Each suggestion MUST be an application of EXACTLY ONE of the 6 "Possible Actions" listed below. Do not invent new types of actions or combine actions into one suggestion.
+The `space_details` will include an `Orientation` (e.g., North, South-West). Use this information to guide your suggestions, especially for wall placements or slab extensions to optimize for sun, shade, or wind, and explicitly mention this in your reasoning.
+
+IMPORTANT: The suggestion MUST be an application of EXACTLY ONE of the "Possible Actions" listed below. Do not invent new types of actions or combine actions into one suggestion.
 
 You must choose from the following list of possible actions to base your suggestions on. For each chosen action, make the specified decisions and provide a detailed description of its application.
 
 Possible Actions:
-1.  **Extend Slab**: Extend an existing slab. You must decide the new area (not more than 50% of original or 5 sqm, whichever is smaller) and suggest a purpose or direction for the extension.
-2.  **Artificial Terrain**: Modify the ground plane. You must decide whether to excavate (e.g., for a sunken seating area) or create a small hill/mound, and suggest its general form and purpose.
-3.  **Outdoor Cooking Feature**: Add a space for a kitchen or fire pit. You must decide between a kitchen setup (e.g., counter, sink, grill) or a fire pit, and suggest its placement and materials.
-4.  **Small Open Pavilion**: Add a small, open-sided pavilion. It should cover no more than 50% of the existing space's area. You must decide its primary use (e.g., shaded lounge, outdoor dining, yoga deck) and suggest a simple structural form.
-5.  **Significant Planting**: Introduce permanent large trees or substantial vegetation. You must decide on the general type of vegetation (e.g., shade trees, screening shrubs, a themed garden bed) and suggest their placement.
-6.  **Water Feature**: Add a water feature integrated into the floor/ground. It should cover no more than 30% of the existing space's area. You must decide if it's a linear feature (e.g., rill, narrow channel) or a more contained circular/organic shape, and suggest its character (e.g., reflective pool, bubbling fountain).
+1.  **Extend Slab**: Extend an existing slab.
+    *   Decide: New area (e.g., +X sqm, consider `slab_extension_limit_sqm` from `studio_export_details` or default max 5 sqm / 50% of original), purpose/direction of extension. The direction MUST consider the space's `Orientation` (from `space_details`) for optimal use (e.g., extend south for more sun, extend away from prevailing wind).
+2.  **Add Wall**: Add a new wall.
+    *   Decide: Location (e.g., "along north edge", "to enclose open_side_east"), height (e.g., 1.2m, consider `max_wall_height_m` from `studio_export_details`), length, material (e.g., "brick", "wood paneling", consider `wall_material_options` from `studio_export_details`).
+3.  **Add Pergola**: Add a new pergola.
+    *   Decide: Coverage area (e.g., "covers X% of the space" or "Xm x Ym area"), height, primary material (e.g., "wood", "metal", consider `pergola_material_options` from `studio_export_details`), style (e.g., "louvered for adjustable shade", "open trellis for vines").
 
-For each suggested variation:
-- The `variation_type` MUST be one of the exact names from the "Possible Actions" list (e.g., "Extend Slab", "Artificial Terrain").
+
+
+
+
+
+For the suggested variation, ALL the following fields in the JSON output MUST be filled with specific, relevant information. Do NOT use "N/A" or generic placeholders.
+- The `variation_type` MUST be one of the exact names from the "Possible Actions" list (e.g., "Extend Slab", "Add Wall", "Add Pergola").
 - The `variation_name` should be a concise, descriptive title for the specific application of the chosen `variation_type` (e.g., "Extended Seating Area", "Sunken Fire Pit Lounge").
-- The `description` should detail how the chosen action from the 'Possible Actions' list is applied to the specific space. It MUST explicitly state all decisions made as required by that action's description (e.g., for 'Extend Slab', state the new area and confirm it meets constraints; for 'Outdoor Cooking Feature', state whether it's a kitchen or fire pit and describe its placement/materials).
-- The `reason_for_profile` should explain why this variation is suitable for the given resident's persona, their preferences, their distance, and the space context.
-- The `estimated_impact` should describe the likely effect (e.g., "Creates a new social hub", "Enhances tranquility and biodiversity").
+- The `description` should detail how the chosen action from the 'Possible Actions' list is applied to the specific space. It MUST explicitly state all decisions made as required by that action's description, referencing `studio_export_details` if used, and how `Orientation` influenced the decision if applicable.
+- The `reason_for_profile` should explain why this variation is suitable for the given `resident_persona`, their `activity_weights_for_resident`, their `distance_to_space`, the `space_context`, and how it helps achieve the `desired_activity_for_space`.
+
+
+The following fields are OPTIONAL. Include them in the `suggestions` object ONLY IF the `user_question_for_suggestion` explicitly or strongly implies a request for this specific type of information. If not requested, OMIT the field from the JSON output. If `user_question_for_suggestion` is empty or very generic (e.g., "Suggest something"), then all these optional fields should be OMITTED.
+
+- `optimal_time_impact_description` (string): Include ONLY IF the user asks about the best time for the variation's impact (e.g., 'When would this be most useful?', 'Will this help in summer?'). If included, it MUST state when this change would have the most positive impact (e.g., "Most beneficial during summer afternoons 2-5 PM for shade").
+- `profile_suitability_notes` (string): Include ONLY IF the user asks for more details on how the design suits their profile (e.g., 'How does this fit my lifestyle?', 'Make it more suitable for me.'). If included, it MUST elaborate on how the design is specifically tailored to the `resident_persona` and their preferences for the `desired_activity_for_space`.
+- `suitability_percentage_increase` (integer): Include ONLY IF the user asks about the quantitative improvement or how much more suitable the space becomes (e.g., 'How much better will this be for X activity?', 'What's the percentage improvement?'). If included, it MUST be an estimated integer percentage increase (e.g., 25 for 25%) in suitability for the `desired_activity_for_space`.
+- `comfort_usability_impact_description` (string): Include ONLY IF the user asks about comfort, usability improvements, or environmental effects (e.g., 'Will it be more comfortable?', 'How does this affect wind/sun?'). If included, it MUST describe the likely effects on environmental comfort and functional usability.
+- `other_beneficiaries` (array of strings): Include ONLY IF the user asks who else might benefit (e.g., 'Will my neighbors like this?', 'Is this good for others?'). If included, list other resident personas or general resident types who might also benefit.
+- `other_activities_benefit` (array of strings with brief note): Include ONLY IF the user asks if the change benefits other activities (e.g., 'Can I also do Y here?', 'What else is this good for?'). If included, list other activities that could also become more suitable.
+
+
+Mandatory fields for the suggestion object are `variation_type`, `variation_name`, `description`, and `reason_for_profile`.
+
 
 Your entire response MUST be ONLY the valid JSON object described below. Do not include any other text, explanations, or markdown formatting (like ```json).
 
@@ -224,45 +252,51 @@ The JSON object should have the following structure:
   "space_id": "string",
   "space_details": "string (details of the space as provided in the input)",
   "user_profile": "string (this should be the resident_persona provided in the input)",
+  "user_question_for_suggestion": "string (the original user question that led to these suggestions)",
+  "desired_activity_for_space": "string (the activity the user wants the space to be good for, as provided in input)",
   "resident_distance_to_space": "string (resident's distance to this specific space, as provided in input)",
   "current_activity_in_space": "string (current activity assigned to this space, as provided in input)",
-  "suggestions": [
+  "studio_export_details_considered": "string (summary of how studio_export_details influenced suggestions, or 'N/A')",
+  "suggestions": [ // Array with exactly ONE suggestion object
     {
-      "variation_type": "string (must be one of the 6 Possible Actions)",
+      "variation_type": "string (must be one of the 3 Possible Actions: Extend Slab, Add Wall, Add Pergola)",
       "variation_name": "string",
       "description": "string",
       "reason_for_profile": "string",
-      "estimated_impact": "string"
+      "optimal_time_impact_description": "string (e.g., 'Most beneficial during summer afternoons 2-5 PM for shade')",
+      "profile_suitability_notes": "string",
+      "suitability_percentage_increase": "string",
+      "comfort_usability_impact": "string",
+      "other_beneficiaries": ["string"],
+      "other_activities_benefit": ["string with brief note"]
     }
   ],
-  "summary_reasoning": "string (overall reasoning for the set of suggestions)"
+  "summary_reasoning": "string (Overall reasoning for the single suggestion. It MUST highlight how it addresses the user_question_for_suggestion and facilitates the desired_activity_for_space. If the user_question_for_suggestion asks about other beneficiaries, this reasoning should explain HOW or WHY they might benefit, considering general factors like shared access to improved common spaces, improved aesthetics for neighbours, or if the modification addresses common needs suggested by general resident personas. If `other_residents_summary` is provided and relevant, incorporate its insights into this explanation.)"
 }
 ```
 
 Example for a "Play Area" space_id and "Families with Young Children" user_profile:
 {
-  "space_id": "O2",
-  "space_details": "Type: Courtyard\\nArea: 50sqm\\nOrientation: South\\nFeatures: Paved, one tree",
+  "space_id": "O3",
+  "space_details": "Type: Patio\\\\nArea: 20sqm\\\\nOrientation: West\\\\nFeatures: Concrete, adjacent to kitchen",
   "user_profile": "Families with Young Children",
-  "resident_distance_to_space": "15.2m",
-  "current_activity_in_space": "Playground",
+  "resident_distance_to_space": "Short (5m)",
+  "user_question_for_suggestion": "Make this patio better for Children's Play. Which other residents might like this change and why?",
+  "current_activity_in_space": "Outdoor Seating",
+  "studio_export_details_considered": "Used 'slab_extension_limit_sqm: 10' from studio_export_details. Considered West orientation for afternoon sun on the southern extension.",
   "suggestions": [
     {
-      "variation_type": "Artificial Terrain",
-      "variation_name": "Play Mound with Slide",
-      "description": "Create a soft-surfaced, circular mound approximately 1m high in the northeast corner of the courtyard. Integrate a short, curved slide and rubber safety surfacing around the base.",
-      "reason_for_profile": "Children benefit from interactive, varied terrain that promotes climbing, sliding, and imaginative play within safe boundaries.",
-      "estimated_impact": "Improves active play and spatial variety"
-    },
-    {
       "variation_type": "Extend Slab",
-      "variation_name": "Scoot Track Extension",
-      "description": "Extend the existing slab by 4 sqm to the south, forming a looped pathway with smooth concrete finish suitable for scooters, tricycles, or toy vehicles.",
-      "reason_for_profile": "Encourages gross motor development and safe wheeled play for toddlers and young children in a controlled environment.",
-      "estimated_impact": "Expands physical play and mobility"
+      "variation_name": "Afternoon Play Patio Extension",
+      "description": "Extend the existing concrete slab by 8 sqm towards the south. This extension is within the 'slab_extension_limit_sqm' of 10 sqm from studio_export_details. Extending south from the West-oriented patio aims to capture more afternoon sun (2 PM - 5 PM), making it warmer for play, while also potentially offering some morning shade depending on surrounding structures.",
+      "reason_for_profile": "Families with Young Children require safe, accessible outdoor play areas. Extending the patio provides more usable space directly adjacent to the kitchen, aligning with their need for supervision and convenience, as requested. The increased area supports active play.",
+      "other_beneficiaries": ["H5", "H12 (Families with Toddlers)"]
+      // profile_suitability_notes, comfort_usability_impact_description, other_beneficiaries, other_activities_benefit are omitted
+      // because the example user_question_for_suggestion did not explicitly ask for them.
+      // optimal_time_impact_description and suitability_percentage_increase are also omitted as per the question.
     }
   ],
-  "summary_reasoning": "The selected sub-variations create a multi-sensory play environment, integrating movement and safety while maximizing the courtyard’s size and sun exposure for families with young children."
+  "summary_reasoning": "The suggested patio extension directly addresses the user's request for more play space for children near the kitchen, making it more suitable for 'Children's Play'. This change would also likely benefit other residents. For example, H5 (who is close by and has a strong preference for 'Playground' activity in this area) would appreciate the larger play surface. Similarly, H12, a family with toddlers (who are nearby and have a good preference for 'Playground'), would find the extended, sunnier patio advantageous for their children."
 }
 
 
@@ -277,6 +311,8 @@ Space ID: {space_id}
 Resident Persona (User Profile): {resident_persona}
 Resident's Distance to this Space: {distance_to_space}
 Resident's Activity Preferences for this space (weights): {activity_weights_for_resident}
+Other Residents Summary (potential beneficiaries based on data): {other_residents_summary}
+User Question for Suggestion: {user_question_for_suggestion}
 Current Activity in this Space: {current_activity_in_space}
 Space Details:
 {processed_space_context_for_prompt}

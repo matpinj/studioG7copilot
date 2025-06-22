@@ -1,44 +1,55 @@
 # d:\01_IAAC\03_aia studio\studioG7copilot\geometry_orchestrator.py
-from sql_calls import get_space_details_as_string, get_dB_schema, format_dB_context, fetch_sql, execute_sql_query
-from llm_calls import suggest_geometric_variations, generate_sql_query, build_answer
+import sys # Add sys import
+import os # Add os import
+
+# Add the project root directory to sys.path
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+from sql_calls import get_space_details_as_string, get_dB_schema, format_dB_context, fetch_sql, execute_sql_query # Now an absolute import
+from llm_calls import suggest_geometric_variations, generate_sql_query, build_answer # Now an absolute import
 # Ensure the RAG utility is correctly imported based on your project structure.
 # If 'utils' is a direct subdirectory of 'studioG7copilot', this should be:
 # from .utils.rag_utils import sql_rag_call
 # If 'utils' is at the same level as 'studioG7copilot' and your execution path handles it:
-from utils.rag_utils import sql_rag_call
+from utils.rag_utils import sql_rag_call # Now an absolute import
 import re
 import json 
 import os
 import pandas as pd # Added for CSV handling
 
 # Define paths for ML predictions CSVs
-GREEN_PREDICTIONS_CSV_PATH = os.path.join(os.path.dirname(__file__), "ml_models", "green_predictions.csv")
-THRESHOLD_PREDICTIONS_CSV_PATH = os.path.join(os.path.dirname(__file__), "ml_models", "threshold_predictions.csv")
-USABILITY_PREDICTIONS_CSV_PATH = os.path.join(os.path.dirname(__file__), "ml_models", "usability_predictions.csv")
-PERSONAS_ASSIGNED_CSV_PATH = os.path.join(os.path.dirname(__file__), "resident_data", "personas_assigned.csv")
-LLM_ACTIVITY_ASSIGNMENTS_CSV_PATH = os.path.join(os.path.dirname(__file__), "llm_activity_assignments.csv") # Assuming it's in the same directory
-VOTING_WEIGHTS_CSV_PATH = os.path.join(os.path.dirname(__file__), "resident_data", "voting_weights.csv")
+GREEN_PREDICTIONS_CSV_PATH = os.path.join(os.path.dirname(__file__), "..", "ml_models", "green_predictions.csv")
+THRESHOLD_PREDICTIONS_CSV_PATH = os.path.join(os.path.dirname(__file__), "..", "ml_models", "threshold_predictions.csv")
+USABILITY_PREDICTIONS_CSV_PATH = os.path.join(os.path.dirname(__file__), "..", "ml_models", "usability_predictions.csv")
+LLM_ACTIVITY_ASSIGNMENTS_CSV_PATH = os.path.join(os.path.dirname(__file__), "..", "llm_reasoning", "llm_activity_assignments.csv") # Corrected path assuming it's in llm_reasoning
+VOTING_WEIGHTS_CSV_PATH = os.path.join(os.path.dirname(__file__), "..", "resident_data", "voting_weights.csv") # type: ignore
+STUDIO_EXPORT_CSV_PATH = os.path.join(os.path.dirname(__file__), "..", "gh_data", "studio_export_ml.csv") # Path to studio_export_ml.csv in gh_data folder
+RESIDENT_DISTANCES_CSV_PATH = os.path.join(os.path.dirname(__file__), "..", "resident_data", "resident_distances.csv")
+
+
 
 # Database path for resident-specific data like distances, if different from general DB_PATH
-GH_DATA_DB_PATH = os.path.join(os.path.dirname(__file__), "sql", "gh_data.db")
+# Assuming gh_data.db is in the project root's sql directory
+GH_DATA_DB_PATH = os.path.join(os.path.dirname(__file__), "..", "sql", "gh_data.db")
 
 # Cache for loaded CSV data
 _loaded_green_predictions_df = None
 _loaded_threshold_predictions_df = None
 _loaded_usability_predictions_df = None
-_loaded_personas_assigned_df = None
 _loaded_llm_activity_assignments_df = None
-
-_loaded_voting_weights_df = None
+_loaded_voting_weights_df = None # type: ignore
+_loaded_studio_export_df = None
+_loaded_resident_distances_df = None
 
 def _load_csv_data(csv_path, df_cache_attr_name):
     """Helper function to load and cache a CSV file."""
-    global _loaded_green_predictions_df, _loaded_threshold_predictions_df, _loaded_usability_predictions_df, \
-           _loaded_personas_assigned_df, _loaded_voting_weights_df, _loaded_llm_activity_assignments_df
+    # Ensure all global df caches are accessible
+    global _loaded_green_predictions_df, _loaded_threshold_predictions_df, _loaded_usability_predictions_df, _loaded_llm_activity_assignments_df, _loaded_voting_weights_df, _loaded_studio_export_df, _loaded_resident_distances_df
 
     
     df_cache = globals()[df_cache_attr_name]
-
     if df_cache is None:
         if os.path.exists(csv_path):
             try:
@@ -67,24 +78,26 @@ def load_threshold_predictions_df():
 def load_usability_predictions_df():
     return _load_csv_data(USABILITY_PREDICTIONS_CSV_PATH, "_loaded_usability_predictions_df")
 
-def load_personas_assigned_df():
-    return _load_csv_data(PERSONAS_ASSIGNED_CSV_PATH, "_loaded_personas_assigned_df")
-
 def load_llm_activity_assignments_df():
     return _load_csv_data(LLM_ACTIVITY_ASSIGNMENTS_CSV_PATH, "_loaded_llm_activity_assignments_df")
-
 
 def load_voting_weights_df():
     return _load_csv_data(VOTING_WEIGHTS_CSV_PATH, "_loaded_voting_weights_df")
 
+def load_studio_export_df():
+    return _load_csv_data(STUDIO_EXPORT_CSV_PATH, "_loaded_studio_export_df")
+
+def load_resident_distances_df():
+    return _load_csv_data(RESIDENT_DISTANCES_CSV_PATH, "_loaded_resident_distances_df")
+
 def _get_prediction_from_df(df, space_id_str, column_name, default_value="N/A"):
     if not df.empty and 'id' in df.columns and column_name in df.columns:
         space_data = df[df['id'] == space_id_str]
-        if not space_data.empty:
+        if not space_data.empty and pd.notna(space_data.iloc[0][column_name]):
             return space_data.iloc[0][column_name]
     return default_value
 
-def get_intelligent_geometric_suggestions(space_id: str, resident_key: str) -> str:
+def get_intelligent_geometric_suggestions(space_id: str, resident_key: str, user_question: str = None, desired_activity_for_space: str = None) -> str: # type: ignore
     """
     Orchestrates fetching space details from SQL and then getting geometric
     suggestions from the LLM, personalized for a resident.
@@ -107,6 +120,9 @@ def get_intelligent_geometric_suggestions(space_id: str, resident_key: str) -> s
     green_df = load_green_predictions_df()
     thresh_df = load_threshold_predictions_df()
     usability_df = load_usability_predictions_df()
+    studio_export_df = load_studio_export_df() # Load the studio export CSV
+    resident_distances_df = load_resident_distances_df() # Load resident distances CSV
+
 
     space_id_str = str(space_id) # Ensure space_id is string for lookup
     resident_key_str = str(resident_key)
@@ -116,18 +132,32 @@ def get_intelligent_geometric_suggestions(space_id: str, resident_key: str) -> s
     threshold_pred_val = _get_prediction_from_df(thresh_df, space_id_str, 'predicted_activities')
     usability_pred_val = _get_prediction_from_df(usability_df, space_id_str, 'usability_prediction')
 
+    # Retrieve details from studio_export.csv
+    studio_export_details_str = "N/A"
+    if not studio_export_df.empty and 'space_id' in studio_export_df.columns:
+        # Ensure space_id_str is compared with string version of 'space_id' column
+        space_export_data = studio_export_df[studio_export_df['space_id'].astype(str) == space_id_str]
+        if not space_export_data.empty:
+            # Convert the row to a JSON string or key-value pairs
+            studio_export_details_str = space_export_data.iloc[0].to_json()
+            # Or: studio_export_details_str = "; ".join([f"{col}: {val}" for col, val in space_export_data.iloc[0].items() if pd.notna(val)])
+
     # Load resident-specific data
-    personas_df = load_personas_assigned_df()
     voting_df = load_voting_weights_df()
     llm_assignments_df = load_llm_activity_assignments_df()
 
 
-    # Get resident persona
+    # Get resident persona from gh_data.db
     resident_persona = "Unknown"
-    if not personas_df.empty and 'resident_key' in personas_df.columns:
-        persona_data = personas_df[personas_df['resident_key'] == resident_key_str]
-        if not persona_data.empty:
-            resident_persona = persona_data.iloc[0].get('resident_persona', "Unknown")
+    try:
+        # Confirm your actual table and column names for personas
+        # Example: table 'personas_table', columns 'resident_key', 'persona_value'
+        query_persona = "SELECT resident_persona FROM personas_assigned WHERE resident_key = ?" # Assuming table name is 'personas_assigned'
+        persona_result = execute_sql_query(GH_DATA_DB_PATH, query_persona, (resident_key_str,))
+        if persona_result and persona_result[0] and pd.notna(persona_result[0][0]):
+            resident_persona = persona_result[0][0]
+    except Exception as e:
+        print(f"Error fetching resident persona from {GH_DATA_DB_PATH}: {e}")
 
     # Get current activity in space
     current_activity_in_space = "Unknown"
@@ -141,25 +171,20 @@ def get_intelligent_geometric_suggestions(space_id: str, resident_key: str) -> s
     
     # Get distance to space for resident
     distance_to_space = "N/A"
-    try:
-        # Ensure resident_key_str is a valid column name (alphanumeric, underscores)
-        # This is a simple check; more robust validation might be needed if keys can be arbitrary.
-        if re.match(r"^[a-zA-Z0-9_]+$", resident_key_str):
-            # Construct query to select the column named after the resident_key
-            # The table name is 'resident_distances', column for space IDs is 'Outdoor_Space'
-            query = f'SELECT "{resident_key_str}" FROM resident_distances WHERE "Outdoor_Space" = ?'
-            result = execute_sql_query(GH_DATA_DB_PATH, query, (space_id_str,))
-            if result and result[0] and pd.notna(result[0][0]):
-                distance_val = result[0][0]
+    if not resident_distances_df.empty:
+        # Assuming resident_distances_df has 'Outdoor_Space' (or 'id') as index or column for space_id,
+        # and columns named after resident_keys (e.g., H1, H2) for distances.
+        # Adjust column names as per your CSV structure.
+        # The resident_distances.csv uses 'Outdoor Space' as the column for space IDs, and _load_csv_data does not rename it to 'id'.
+        space_row = resident_distances_df[resident_distances_df['Outdoor Space'].astype(str) == space_id_str]
+        if not space_row.empty and resident_key_str in space_row.columns:
+            distance_val = space_row.iloc[0][resident_key_str]
+            if pd.notna(distance_val):
                 if isinstance(distance_val, (int, float)):
                     distance_to_space = f"{distance_val:.1f}"
                 else:
-                    distance_to_space = str(distance_val) 
-        else:
-            print(f"Warning: Invalid resident_key format for SQL query: {resident_key_str}")
-    except Exception as e:
-        print(f"Error querying resident distance from {GH_DATA_DB_PATH}: {e}")
-        # distance_to_space remains "N/A"
+                    distance_to_space = str(distance_val)
+
 
     # Voting Weights & Permission Check
     can_suggest_changes = False
@@ -183,6 +208,62 @@ def get_intelligent_geometric_suggestions(space_id: str, resident_key: str) -> s
     if not can_suggest_changes:
         return json.dumps({"error": f"Resident {resident_key_str} is not allowed to change the geometry of space {space_id_str}. Reason: Resident must have 'owner' status for this space to suggest changes."})
 
+    # --- START: New section to prepare summary for other residents ---
+    other_residents_benefit_summary = "No specific data on other highly interested residents."
+    # This is a simplified example. Actual logic would involve:
+    # 1. Determining the primary activity benefited by a potential suggestion type.
+    #    This is tricky as the suggestion isn't made yet.
+    #    Alternatively, focus on the `desired_activity_for_space` if provided.
+    primary_benefited_activity = desired_activity_for_space # Or infer from suggestion type
+
+    if primary_benefited_activity and primary_benefited_activity != "Not specified" and not voting_df.empty and not resident_distances_df.empty:
+        relevant_votes = voting_df[
+            (voting_df['space'] == space_id_str) &
+            (voting_df['activity'] == primary_benefited_activity) &
+            (voting_df['resident'] != resident_key_str) # Exclude the primary resident
+        ]
+
+        if not relevant_votes.empty:
+            # Get distances for the current space_id_str
+            # Ensure 'Outdoor Space' column exists and is used for matching space_id_str
+            if 'Outdoor Space' in resident_distances_df.columns and \
+               space_id_str in resident_distances_df['Outdoor Space'].astype(str).values:
+                
+                space_specific_distances_series = resident_distances_df[
+                    resident_distances_df['Outdoor Space'].astype(str) == space_id_str
+                ].iloc[0] # Get the row as a Series
+
+                potential_beneficiaries_info = []
+                for _, vote_row in relevant_votes.iterrows():
+                    other_resident_id = str(vote_row['resident']) # Ensure resident ID is string
+                    vote_weight = vote_row['weight']
+                    
+                    if other_resident_id in space_specific_distances_series.index:
+                        distance = space_specific_distances_series[other_resident_id]
+                        if pd.notna(distance) and isinstance(distance, (int, float)):
+                            # Simple scoring: higher vote weight, lower distance = better
+                            score = (vote_weight * 10) / (distance + 1) # Emphasize vote weight, avoid div by zero
+                            potential_beneficiaries_info.append({
+                                "resident": other_resident_id,
+                                "preference_weight": vote_weight,
+                                "distance": distance,
+                                "score": score
+                            })
+                
+                if potential_beneficiaries_info:
+                    sorted_beneficiaries = sorted(potential_beneficiaries_info, key=lambda x: x['score'], reverse=True)
+                    top_n = 3 # Consider top 3 other beneficiaries
+                    summary_parts = []
+                    for ben_info in sorted_beneficiaries[:top_n]:
+                        dist_desc = "close by" if ben_info['distance'] < 15 else "nearby" if ben_info['distance'] < 40 else "further away"
+                        pref_desc = "strong preference" if ben_info['preference_weight'] > 0.6 else "good preference" if ben_info['preference_weight'] > 0.3 else "some preference"
+                        summary_parts.append(f"{ben_info['resident']} (who is {dist_desc} and has a {pref_desc} for '{primary_benefited_activity}')")
+                    
+                    if summary_parts:
+                        other_residents_benefit_summary = "Other residents who might particularly benefit include: " + "; ".join(summary_parts) + "."
+            else:
+                other_residents_benefit_summary = f"Distance data for space {space_id_str} not found to assess other beneficiaries."
+    # --- END: New section ---
 
     # If allowed, proceed to get suggestions
     suggestions_json_str = suggest_geometric_variations(
@@ -193,14 +274,42 @@ def get_intelligent_geometric_suggestions(space_id: str, resident_key: str) -> s
         threshold_prediction=threshold_pred_val,
         usability_prediction=usability_pred_val,
         distance_to_space=str(distance_to_space), # Ensure it's a string
-        activity_weights_for_resident=activity_weights_for_resident_str,
-        current_activity_in_space=current_activity_in_space
+        activity_weights_for_resident=activity_weights_for_resident_str, # type: ignore
+        current_activity_in_space=current_activity_in_space,
+        studio_export_details=studio_export_details_str,
+        user_question_for_suggestion=user_question if user_question else "General suggestions requested.",
+        desired_activity_for_space=desired_activity_for_space if desired_activity_for_space else "Not specified",
+        other_residents_summary=other_residents_benefit_summary # Pass the new summary
     )
 
-    return suggestions_json_str
+    # Clean and parse the JSON string response from LLM
+    cleaned_json_str = suggestions_json_str
+    # First, try to find JSON within markdown-style code blocks
+    match_markdown = re.search(r'```json\s*(\{[\s\S]*?\})\s*```', cleaned_json_str, re.DOTALL)
+    if match_markdown:
+        cleaned_json_str = match_markdown.group(1)
+    else:
+        # If not found, try to find the first '{' and last '}' to extract the main JSON object
+        # This is more robust against leading/trailing non-JSON text.
+        match_object = re.search(r'^\s*.*?(\{[\s\S]*\})\s*.*?$', cleaned_json_str, re.DOTALL)
+        if match_object:
+            cleaned_json_str = match_object.group(1)
+    cleaned_json_str = cleaned_json_str.replace('\\ n', '\\n')
+    # Attempt to fix common LLM escape issues more carefully
+    cleaned_json_str = re.sub(r'\\(?![bfnrtu"\\\/])', '', cleaned_json_str) # Remove backslashes not part of valid escapes
+
+    try:
+        suggestions_data = json.loads(cleaned_json_str)
+        return suggestions_data
+    except json.JSONDecodeError as e:
+        # Log this error appropriately in a real application
+        print(f"JSONDecodeError in orchestrator for space_id {space_id}, resident {resident_key}: {e}. Raw: >>>{suggestions_json_str}<<< Cleaned: >>>{cleaned_json_str}<<<")
+        return {"error": "Failed to parse LLM response for geometric variations.", "details": str(e), "raw_response": suggestions_json_str, "cleaned_response": cleaned_json_str}
+
 
 TABLE_DESCRIPTIONS_PATH = os.path.join(os.path.dirname(__file__), "knowledge", "table_descriptions.json")
-DB_PATH = os.path.join(os.path.dirname(__file__), "sql", "example.db") # Define DB_PATH consistently
+# Assuming example.db is in the project root's sql directory
+DB_PATH = os.path.join(os.path.dirname(__file__), "..", "sql", "example.db") # Define DB_PATH consistently
 
 #region
 def process_natural_language_to_sql_answer(user_question: str) -> dict:
