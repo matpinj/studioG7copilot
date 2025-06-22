@@ -1,2 +1,2 @@
 ﻿bedroom1,bedroom2,bedroom3,units, residents,open_space
-51,32,50,133,397,53
+15,34,34,83,287,49

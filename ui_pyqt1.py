@@ -14,6 +14,22 @@ import json # Added for json.dumps in GeometryWorkflowTab
 #for gh_server_geometry
 import requests
 
+import socket
+
+def send_udp_command(command: str, port: int = 6000, host: str = "127.0.0.1"):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.sendto(command.encode("utf-8"), (host, port))
+
+
+# def send_udp_command2(command: str, port: int = 6001, host: str = "127.0.0.1"):
+#     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+#     print(f"Sending UDP command: {command} to {host}:{port}")  # Debugging
+#     sock.sendto(command.encode("utf-8"), (host, port))
+
+def send_udp_command2(message, port=6001):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.sendto(message.encode("utf-8"), ("127.0.0.1", port))
+
 
 class RequestWorker(QThread):
     finished = pyqtSignal(dict)
@@ -44,6 +60,7 @@ class ChatTab(QWidget):
         self.endpoint = endpoint
         self.extra_fields = extra_fields or {}
         self.conversation_history = []
+        self.geometry_shown = False  # Track geometry state
 
         layout = QVBoxLayout()
         self.chat_display = QTextEdit()
@@ -56,7 +73,8 @@ class ChatTab(QWidget):
 
             # Show All Building Geometry button (far left)
             self.show_all_btn = QPushButton("Show All Building Geometry")
-            self.show_all_btn.clicked.connect(self.show_all_geometry)
+            # self.show_all_btn.clicked.connect(self.show_all_geometry)
+            self.show_all_btn.clicked.connect(self.toggle_all_geometry)
             geom_layout.addWidget(self.show_all_btn)
 
             # Add stretch to push dropdowns and "Show" button to the right
@@ -70,7 +88,7 @@ class ChatTab(QWidget):
             level_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
             self.level_dropdown = QComboBox()
             self.level_dropdown.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-            self.level_dropdown.addItems(["1", "2", "3"])
+            self.level_dropdown.addItems(["1", "2", "3", "4"])
             level_box.addWidget(level_label)
             level_box.addWidget(self.level_dropdown)
             geom_layout.addLayout(level_box)
@@ -192,12 +210,11 @@ class ChatTab(QWidget):
 
 
     def send_geometry_command(self):
-        # Get the selected level as int (1, 2, 3)
+        # Get the selected level and convert to 0-based index
         level_option = int(self.level_dropdown.currentText())
-        # Convert to 0-based index for Grasshopper (0, 1, 2)
         level_value = level_option - 1
 
-        # Map space info
+        # Encode space info to numeric value
         space_info_map = {
             "Activity": 20,
             "Area": 4,
@@ -207,7 +224,8 @@ class ChatTab(QWidget):
         }
         space_info_option = self.space_info_dropdown.currentText()
         space_info_value = space_info_map.get(space_info_option, -1)
-        # Map apartment info
+
+        # Encode apartment info to numeric value
         apt_info_map = {
             "Key": 0,
             "Residents": 1
@@ -215,60 +233,55 @@ class ChatTab(QWidget):
         apt_info_option = self.apt_info_dropdown.currentText()
         apt_info_value = apt_info_map.get(apt_info_option, -1)
 
-        payload = {
-            "level": level_value,  # Now 0, 1, or 2
-            "space_info": space_info_value,
-            "apt_info": apt_info_value
-        }
-        try:
-            r = requests.post("http://localhost:5000/set_geometry", json=payload)
-            if r.status_code == 200:
-                self.chat_display.append(
-                    f"<b>Geometry Command sent:</b> Level: {level_option} (GH: {level_value}), Space Info: {space_info_option} ({space_info_value}), Apartment Info: {apt_info_option} ({apt_info_value})"
-                )
-            else:
-                self.chat_display.append(f"<b>Error sending geometry command</b>")
+        # Send encoded values as a string like "1|8|0"
+        payload = f"{level_value}|{space_info_value}|{apt_info_value}"
 
+        try:
+            print(f"Sending encoded payload: {payload}")
+            send_udp_command2(payload, port=6001)
+            self.chat_display.append(
+                f"<b>Encoded Geometry Command sent:</b> {payload}"
+            )
         except Exception as e:
             self.chat_display.append(f"<b>Error:</b> {e}")
 
 
-    def show_all_geometry(self):
+    def toggle_all_geometry(self):
+        if not self.geometry_shown:
+            self.show_all_geometry(force=True)
+        else:
+            self.hide_all_geometry(force=True)
+
+    def show_all_geometry(self, force=False):
         try:
-            r = requests.post("http://localhost:5000/set_geometry", json={"geometry_command": "toggle_all"})
-            if r.status_code == 200:
-                state = r.json().get("visible", False)
-                if state:
-                    self.show_all_btn.setText("Hide All Building Geometry")
-                    msg = "Show All Building Geometry"
-                else:
-                    self.show_all_btn.setText("Show All Building Geometry")
-                    msg = "Hide All Building Geometry"
-                self.chat_display.append(f"<b>{msg}</b>")
-            else:
-                self.chat_display.append("<b>Error toggling Show All command</b>")
+            send_udp_command("show_all")
+            self.geometry_shown = True
+            self.show_all_btn.setText("Hide All Building Geometry")
+            if force or not self.chat_display.toPlainText().endswith("All geometry shown."):
+                self.chat_display.append("<b>All geometry shown.</b>")
         except Exception as e:
             self.chat_display.append(f"<b>Error:</b> {e}")
 
-    def hide_all_geometry(self):
+    def hide_all_geometry(self, force=False):
         try:
-            r = requests.post("http://localhost:5000/set_geometry", json={"geometry_command": "hide_all"})
-            if r.status_code == 200:
+            send_udp_command("hide_all")
+            self.geometry_shown = False
+            self.show_all_btn.setText("Show All Building Geometry")
+            if force or not self.chat_display.toPlainText().endswith("All geometry hidden."):
                 self.chat_display.append("<b>All geometry hidden.</b>")
-            else:
-                self.chat_display.append("<b>Error hiding all geometry</b>")
         except Exception as e:
             self.chat_display.append(f"<b>Error:</b> {e}")
+
 
     def hide_specific_geometry(self):
+        # Send a "null|null|null" string to port 6001 to hide all geometry
         try:
-            r = requests.post("http://localhost:5000/set_geometry", json={"geometry_command": "hide_specific"})
-            if r.status_code == 200:
-                self.chat_display.append("<b>Selected geometry hidden.</b>")
-            else:
-                self.chat_display.append("<b>Error hiding selected geometry</b>")
+            payload = "null|null|null"
+            send_udp_command2(payload, port=6001)
+            self.chat_display.append("<b>Selected geometry hidden (no geometry previewed).</b>")
         except Exception as e:
             self.chat_display.append(f"<b>Error:</b> {e}")
+
 
 class WelcomeTab(QWidget):
     def __init__(self, info_text):
@@ -313,7 +326,12 @@ class MainWindow(QWidget):
 
         # Existing tabs
         tabs.addTab(ChatTab("http://localhost:5000/general_question"), "General")
-        tabs.addTab(ChatTab("http://localhost:5001/space_question"), "Space Q&A")
+
+        # Add Q&A + Negotiate Tab from ui_pyqt_spaceqna.py
+        from ui_pyqt_spaceqna import SpaceQnAUI
+        self.qna_neg_tab = SpaceQnAUI()
+        tabs.addTab(self.qna_neg_tab, "Q&A + Negotiate")
+
         tabs.addTab(ChatTab("http://localhost:5002/geometry_suggestion"), "Geometry/Negotiation")
         tabs.addTab(GeometryWorkflowTab("http://localhost:5004/initiate_gh_workflow"), "Geometry Workflow")
 
