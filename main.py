@@ -44,21 +44,33 @@ app = Flask(__name__)
 
 @app.route('/general_question', methods=['POST'])
 def handle_general_question():
-    try:
-        start = time.time()
-        print("Received question request")
-        data = request.get_json()
-        print("Data received:", data)
-        user_message = data.get('question', '')
-        conv_hist = data.get('conversation_history', [])
-        answer = answer_general_question(user_message, conv_hist)
-        conv_hist.append({"role": "user", "content": user_message})
-        conv_hist.append({"role": "assistant", "content": answer})
-        print("Returning response, elapsed:", time.time() - start, "seconds")
-        return jsonify({'response': answer, 'conversation_history': conv_hist})
-    except Exception as e:
-        print("Error:", e)
-        return jsonify({'response': f"Server error: {e}", 'conversation_history': []}), 500
+    data = request.get_json()
+    question = data.get("question", "")
+    conversation_history = data.get("conversation_history", [])
+
+    routed_parts = route_question(question)
+    text_answer = ""
+
+    for part in routed_parts:
+        destination = part["destination"]
+        part_text = part["text"]
+
+        if destination == "sql":
+            answer = answer_sql_question(part_text)
+            text_answer += f"\n(SQL Answer for: \"{part_text}\")\n{answer}"
+        elif destination == "knowledge":
+            embedding_file = part.get("embedding_file")
+            answer = answer_from_knowledge(part_text, embedding_file, conversation_history)
+            text_answer += f"\n(Knowledge Answer for: \"{part_text}\")\n{answer}"
+        else:
+            fallback = "Sorry, I couldn't understand that part."
+            text_answer += f"\n(Error for: \"{part_text}\")\n{fallback}"
+
+    response = {
+        "response": text_answer.strip(),
+        "conversation_history": conversation_history
+    }
+    return jsonify(response)
 
 @app.route('/set_geometry', methods=['POST'])
 def set_geometry():
