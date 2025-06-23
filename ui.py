@@ -296,10 +296,10 @@ class ChatTab(QWidget):
 
         # Encode space info to numeric value
         space_info_map = {
-            "Activity": 20,
+            "Activity": 23,
             "Area": 4,
             "UTCI": 8,
-            "Wind": 7,
+            "Wind": 10,
             "Orientation": 2
         }
         space_info_option = self.space_info_dropdown.currentText()
