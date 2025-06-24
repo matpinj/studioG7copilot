@@ -9,8 +9,6 @@ import os
 import requests
 import sqlite3
 
-
-
 # THIS DEFINITION SET IS FOR LLM REASONING ENGINE TO ASSIGN ACTIVITIES TO OUTDOOR SPACES
 # It uses a local LLM server to generate assignments based on activity space data and resident preferences.
 EXPLANATION_MODE = True
@@ -18,17 +16,39 @@ EXPLANATION_MODE = True
 # False: Assigns activities in a file based on llm reasoning
 logging.basicConfig(level=logging.INFO)
 
+def clean_llm_json(text):
+    # Remove markdown code block markers if present
+    text = re.sub(r"```json|```", "", text).strip()
+    # Try to extract the first {...} block
+    match = re.search(r"\{.*\}", text, re.DOTALL)
+    if match:
+        return match.group(0)
+    return text  # fallback
+
 def load_csvs():
      # Load activity space geometries
     conn = sqlite3.connect('sql/gh_data.db')  # Use your actual DB path
     geometries = pd.read_sql_query("SELECT * FROM activity_space", conn)
     # match column name in activity_space:
     geometries.rename(columns={"key": "id"}, inplace=True)
+    print("Raw keys from DB:", geometries['id'].tolist())
+    geometries["id"] = geometries["id"].apply(lambda x: f"O{x}" if not str(x).startswith("O") else str(x))
     conn.close()
-    # Load CSV prediction and resident data
-    thresh = pd.read_csv('ml_models/threshold_predictions.csv')
-    green = pd.read_csv('ml_models/green_predictions.csv')
-    usability = pd.read_csv('ml_models/usability_predictions.csv')
+
+    # Load CSV prediction from ML for baked file it is comment out
+    # thresh = pd.read_csv('ml_models/threshold_predictions.csv')
+    # green = pd.read_csv('ml_models/green_predictions.csv')
+    # usability = pd.read_csv('ml_models/usability_predictions.csv')
+
+    # Load the combined CSV
+    multi = pd.read_csv('gh_data/gh_data_multiple_activities.csv')
+    multi = multi.rename(columns={'key': 'id'})
+    thresh = multi[['id', 'activity']].rename(columns={'activity': 'predicted_activities'})
+    green = multi[['id', 'green_suitability']].rename(columns={'green_suitability': 'green_prediction'})
+    usability = multi[['id', 'usability']].rename(columns={'usability': 'usability_prediction'})
+
+
+    # Load voting weights
     voting = pd.read_csv('resident_data/voting_weights.csv')
     conn = sqlite3.connect('sql/gh_data.db')  # Use your actual DB path
      # Load resident distances
@@ -47,6 +67,14 @@ def normalize_ids(dfs):
         df["id"] = df["id"].astype(str)
     return dfs
 
+
+    print("IDs in geometries:", set(geometries['id']))
+    print("IDs in distances:", set(distances['id']))
+    print("Missing in distances:", set(geometries['id']) - set(distances['id']))
+
+
+
+
 def make_prompt(row, space_id, activity_scores, residents_summary):
     scores_text = "\n".join([f"- {a}: {round(s, 3)}" for a, s in sorted(activity_scores.items(), key=lambda x: -x[1])])
 
@@ -62,8 +90,11 @@ You are an architecture assistant assigning the best outdoor activity for a give
 - Open sides: {row['open_side']}
 - Compactness: {row['compactness']}
 
-### Threshold-based prediction, for outdoor activities you can only choose from this list for related outdoor spaces:
-{row.get('predicted_activities', 'None')}
+### Threshold-based prediction:
+You MUST choose the activity ONLY from this list: {row.get('predicted_activities', 'None')}
+Do NOT invent or select any activity not in this list.
+
+
 
 ### Green prediction:
 {row.get('green_prediction', 'None')}
@@ -121,7 +152,14 @@ def call_local_llm(prompt):
     except Exception as e:
         return f'{{"parameters": {{"activity": null}}, "reasoning": "LLM error: {str(e)}"}}'
 
-def generate_llm_assignments(output_path="llm_reasoning\llm_assignments.json"):
+def generate_llm_assignments(output_path=None):
+    # Set output directory and file paths
+    output_dir = os.path.join(os.path.dirname(__file__), "llm_reasoning")
+    os.makedirs(output_dir, exist_ok=True)
+    if output_path is None:
+        output_path = os.path.join(output_dir, "llm_assignments.json")
+    csv_path = os.path.join(output_dir, "llm_activity_assignments.csv")
+
     geometries, thresh, green, usability, voting, distances, personas = load_csvs()
     geometries, thresh, green, usability = normalize_ids([geometries, thresh, green, usability])
 
@@ -129,10 +167,6 @@ def generate_llm_assignments(output_path="llm_reasoning\llm_assignments.json"):
     merged = merged.merge(thresh[["id", "predicted_activities"]], on="id", how="left")
     merged = merged.merge(green[["id", "green_prediction"]], on="id", how="left")
     merged = merged.merge(usability[["id", "usability_prediction"]], on="id", how="left")
-
-    # Ensure 'in_out' is present after merging
-    # if 'in_out' not in merged.columns:
-    #     merged = merged.merge(geometries[['id', 'in_out']], on='id', how='left')
 
     if 'resident' in voting.columns:
         voting['resident'] = voting['resident'].astype(str)
@@ -171,28 +205,14 @@ def generate_llm_assignments(output_path="llm_reasoning\llm_assignments.json"):
                 for _, r in residents_info.iterrows()
             ])
 
-            # activity_scores = {} OLD METHOD COUNTING EVERY RESIDENT VOTE
-            # for _, res in residents_info.iterrows():
-            #     key = res["resident_key"]
-            #     pop = float(res["resident_population"])
-            #     dist = float(top_residents[top_residents["resident_key"] == key]["distance"].values[0])
-            #     weight = pop / ((dist + 1e-5) ** 2) # to increase weight for closer residents
-            #     res_votes = voting[(voting["resident"] == key) & (voting["space"] == space_id)]
-            #     for _, vote in res_votes.iterrows():
-            #         act = vote["activity"]
-            #         score = float(vote["weight"])
-            #         activity_scores[act] = activity_scores.get(act, 0) + score * weight
-
-            #Calculate activity_scores based on these residents
             activity_scores = {}
             for _, res in residents_info.iterrows():
                 key = res["resident_key"]
                 pop = float(res["resident_population"])
-                # Only consider votes from this resident for this space
                 res_votes = voting[(voting["resident"] == key) & (voting["space"] == space_id)]
                 for _, vote in res_votes.iterrows():
                     act = vote["activity"]
-                    score = float(vote["weight"]) * pop  # or just use vote["weight"] if you don't want to weight by population
+                    score = float(vote["weight"]) * pop
                     activity_scores[act] = activity_scores.get(act, 0) + score
 
             prompt = make_prompt(row, space_id, activity_scores, residents_summary)
@@ -200,17 +220,25 @@ def generate_llm_assignments(output_path="llm_reasoning\llm_assignments.json"):
             print(f"[DEBUG] Response for {space_id}:\n{llm_response}\n")
 
             try:
-                json_result = json.loads(llm_response)
-                if "parameters" not in json_result or "activity" not in json_result["parameters"]:
-                    raise ValueError("Missing 'parameters' or 'activity' in response")
+                llm_response_clean = clean_llm_json(llm_response)
+                json_result = json.loads(llm_response_clean)
+                params = json_result.get("parameters", {})
+                if not isinstance(params.get("id", None), str):
+                    params["id"] = str(space_id)
+                activity = params.get("activity", None)
+                if activity is not None and not isinstance(activity, str):
+                    params["activity"] = str(activity)
+                json_result["parameters"] = params
+                if "reasoning" not in json_result:
+                    json_result["reasoning"] = ""
+                results.append(json_result)
             except Exception as e:
                 logging.error(f"Invalid JSON from LLM for {space_id}: {e}")
                 json_result = {
                     "parameters": {"id": space_id, "activity": None},
                     "reasoning": f"Invalid LLM output: {llm_response}"
                 }
-
-            results.append(json_result)
+                results.append(json_result)
 
         except Exception as e:
             logging.error(f"LLM failed for {row['id']}: {e}")
@@ -224,12 +252,17 @@ def generate_llm_assignments(output_path="llm_reasoning\llm_assignments.json"):
     logging.info(f"LLM assignments saved to {output_path}")
 
     summary = [{"space_id": r["parameters"]["id"], "assigned_activity": r["parameters"]["activity"]} for r in results]
-    pd.DataFrame(summary).to_csv("llm_reasoning\llm_activity_assignments.csv", index=False)
-    logging.info("CSV summary saved to llm_reasoning\llm_activity_assignments.csv")
+    pd.DataFrame(summary).to_csv(csv_path, index=False)
+    logging.info(f"CSV summary saved to {csv_path}")
 
 
 #THIS BIT OF CODE IS FOR GENERATING ALL ASSIGNMENTS AND SAVING THEM TO A FILE 8COMMENT OUT IF YOU DO NOT WANT TO USE IT)
 if __name__ == "__main__":
+    geometries, thresh, green, usability, voting, distances, personas = load_csvs()
+    print("geometries['id'] sample:", geometries['id'].head(10).tolist())
+    print("thresh['id'] sample:", thresh['id'].head(10).tolist())
+    print("distances['id'] sample:", distances['id'].head(10).tolist())
+    print("Missing in distances:", set(geometries['id']) - set(distances['id']))
     generate_llm_assignments()
 
 
@@ -238,6 +271,8 @@ if __name__ == "__main__":
 def explain_activity_for_space(space_id, question, geometries, thresh, green, usability, voting, distances, personas, assignments_path="llm_reasoning\llm_activity_assignments.csv"):
     # Load assignments and get assigned activity for this space
     assignments = pd.read_csv(assignments_path)
+    assignments['space_id'] = assignments['space_id'].astype(str).str.strip()
+    space_id = str(space_id).strip()
     assigned_row = assignments[assignments['space_id'] == space_id]
     if assigned_row.empty:
         return f"No assigned activity found for space {space_id}."
@@ -332,11 +367,29 @@ def answer_general_space_question(
     house_key, question, geometries, thresh, green, usability, voting, distances, personas,
     assignments_path="llm_reasoning/llm_activity_assignments.csv"
 ):
+    # Detect if the question is about a specific activity
+    activity_keywords = ["sports", "playground", "sunbath"]  # Add more as needed
+    activity_mentioned = None
+    for act in activity_keywords:
+        if act.lower() in question.lower():
+            activity_mentioned = act
+            break
+
+    assignments = pd.read_csv(assignments_path)
+    assignments['space_id'] = assignments['space_id'].astype(str).str.strip()
+    assignments['assigned_activity'] = assignments['assigned_activity'].astype(str).str.strip()
+
+    if activity_mentioned:
+        filtered = assignments[assignments['assigned_activity'].str.lower() == activity_mentioned.lower()]
+        if filtered.empty:
+            return f"No outdoor spaces are assigned to {activity_mentioned}."
+        space_list = filtered['space_id'].tolist()
+        return f"The following outdoor spaces are assigned to {activity_mentioned}: {', '.join(space_list)}"
+
     # Find nearest 5 outdoor spaces
     if house_key not in distances.columns:
         return f"No distances found for house key {house_key}."
 
-    assignments = pd.read_csv(assignments_path)
     nearby = distances[["id", house_key]].rename(columns={house_key: "distance", "id": "space_id"})
     nearby = nearby.sort_values("distance").head(5)
 
@@ -347,9 +400,10 @@ def answer_general_space_question(
         distance = row['distance']
 
         # Assigned activity
-        assigned_row = assignments[assignments['space_id'] == space_id]
+        assignments['space_id'] = assignments['space_id'].astype(str).str.strip()
+        space_id_str = str(space_id).strip()
+        assigned_row = assignments[assignments['space_id'] == space_id_str]
         assigned_activity = assigned_row.iloc[0]['assigned_activity'] if not assigned_row.empty else "Unknown"
-
         # Geometry info
         geo_row = geometries[geometries["id"] == space_id]
         if not geo_row.empty:
@@ -426,7 +480,8 @@ You are a community advisor helping a resident understand the outdoor spaces nea
 ### Nearby spaces, assigned activities, properties, predictions, residents, and voting:
 {space_summaries_text}
 
-Outdoor spaces are activity spaces and their keys start with O1, O2, etc. Each space has an assigned activity and a distance from the resident's house.
+Outdoor spaces are activity spaces and their keys start with O1, O2, etc. 
+Each space has an assigned activity and a distance from the resident's house.Only refer to the assigned activities listed above. Do not invent or suggest any other activities.
 Apartment keys are residents' house keys and start with H1, H2, etc. The resident has a question about the nearby spaces.
 ### Your task:
 Answer the resident's question based on this information.
@@ -435,3 +490,8 @@ Be concise and use plain language.
 
     return call_local_llm(prompt)
 
+def get_spaces_with_assigned_activity(activity_name, assignments_path="llm_reasoning/llm_activity_assignments.csv"):
+    assignments = pd.read_csv(assignments_path)
+    assignments['assigned_activity'] = assignments['assigned_activity'].astype(str).str.strip()
+    filtered = assignments[assignments['assigned_activity'].str.lower() == activity_name.lower()]
+    return filtered['space_id'].tolist()

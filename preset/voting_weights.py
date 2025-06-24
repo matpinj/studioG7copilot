@@ -58,3 +58,5 @@ voting_df = pd.DataFrame(results)
 # To display the DataFrame, you can use the following line instead:
 print(voting_df)
 voting_df.to_csv("preset/voting_weights.csv", index=False)
+voting_df.to_csv("resident_data/voting_weights.csv", index=False)
+
