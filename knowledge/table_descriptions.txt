@@ -4,9 +4,9 @@ Columns: bedroom1, bedroom2, bedroom3, units, residents, open_space
 bedroom1: Number of 1-bedroom apartments on the level
 bedroom2: Number of 2-bedroom apartments on the level
 bedroom3: Number of 3-bedroom apartments on the level
-units: Total number of apartment units on the level
-residents: Total number of residents living on the level
-open_space: Total number of open_spaces on that level
+units: Total number of apartment units on the level, for total number of units, addition all values in this column
+residents: Total number of residents living on the level, for total number addition all values in this column
+open_space: Total number of open_spaces/shared spaces on that level
 Example rows:
 bedroom1: 23, bedroom2: 29, bedroom3: 4, units: 56, residents: 130, open_space: 24
 bedroom1: 18, bedroom2: 22, bedroom3: 1, units: 41, residents: 89, open_space: 13
@@ -16,7 +16,7 @@ Typical use: Analyze the distribution of apartment types and residents per build
 
 Table: activity_space
 Description: This table contains all activity spaces with their geometrical and environmental information as columns. Each row represents a unique activity space, including its spatial properties, environmental conditions, and possible activities. The most important columns are level (which level the activity space is on), area, and activity. The activity column lists one or more possible activities for that space.
-Columns: key, type, orientation, height, area, level, open_side, wind_exp, utci, neigh_dist, compactness, types touching, neighbours touching, bounding area ratio, core distance, cos(angle_in_radians), sin(angle_in_radians), edge count, longest edge length, privacy score
+Columns: key, type, orientation, height, area, level, open_side, in_out, inc_rad, sun_h, wind_exp, utci, neigh_dist, usability, green_suitability, compactness, types touching, neighbours touching, bounding area ratio, cos(angle_in_radians), sin(angle_in_radians), edge count, longest edge length, activtiy
 Column meanings:
 key: Unique identifier for the activity space, activity space is outdoor space, the keys goes like O1,O2,O3...
 type: type of open space, based on area (e.g. balcony, terrace)
@@ -25,9 +25,14 @@ height: Height of the space (meters)
 area: Area of the space (square meters)
 level: Building level/floor where the space is located
 open_side: Number of open sides
+in_out: is space outdoor or indoor
+inc_rad: radiation of space
+sun_h: number of sun hours in activity/shared space
 wind_exp: Wind exposure
 utci: Universal Thermal Climate Index
 neigh_dist: Distance to nearest neighbor
+usability: how space feels, is it warm_sunny, cool_breezy or comfortable
+green_suitability: is space suitable for greenery or not
 compactness: Compactness ratio
 types touching: Number of different types of spaces touching
 neighbours touching: Number of neighboring spaces touching
@@ -37,12 +42,12 @@ cos(angle_in_radians): Cosine of orientation angle
 sin(angle_in_radians): Sine of orientation angle
 edge count: Number of edges
 longest edge length: Length of the longest edge
-privacy score: Privacy score (0–1)
+activtiy: Predicted acitvities per space, it can be multiple values per row
 Example rows:
 key: O1, type: balcony, orientation: N, height: 3, area: 18, level: 1, open_side: 1, ...
 key: O3, type: balcony, orientation: SE, height: 3, area: 27, level: 1, open_side: 2, ...
 key: O28, type: terrace, orientation: SW, height: 3, area: 216, level: 2, open_side: 2,  ...
-Typical use: Analyze the spatial and environmental characteristics of activity spaces, determine which activities are possible in each space, and support planning or assignment of activities based on space properties.
+Typical use: Analyze the spatial and environmental characteristics of activity/shared spaces, determine which activities are possible in each space, and support planning or assignment of activities based on space properties.
 
 Table: personas_assigned
 Description: This table provides data about people living in the building, with each row representing one household.
@@ -61,10 +66,12 @@ resident_key: H67, resident_persona: travelers/expats, resident_population: 1, l
 resident_key: H80, resident_persona: diy_enthusiasts/creatives, resident_population: 1, level: 2, age: 34, tenant/owner: owner
 Typical use: Find out which households live on level 1,2 or X, their demographic type and number of people living in, their age, ownership. Useful for analyzing community needs, planning amenities, or understanding the distribution of household types and activities on this level.
 
-Table: resident_distances
-Description: This table provides data about residents` distances (H1,H2,...)  to Outdoor Spaces (O1,O2,...).
-Note: The number of resident columns (H1, H2, ...) and outdoor spaces (O1, O2, ...) can vary.
-Columns: Outdoor Space, H1, H2, ... (continues for all outdoor spaces but some of them has no relationship with some of outdoor spaces and their column is empty)
+Table: resident_distances_all
+Description: This table provides data about all distances between residents` distances (H1,H2,...) to residents` distances (H1,H2,...), Outdoor Spaces (O1,O2,...) to Outdoor Spaces (O1,O2,...) and residents` distances (H1,H2,...)  to Outdoor Spaces (O1,O2,...).
+Note: The number of resident´s columns (H1, H2, ...) and Outdoor Spaces (O1, O2, ...) can vary.
+Columns: Source Node, H1, H2, ... (continues for all Outdoor Spaces and residents` distances  )
 Example rows:
-Outdoor Space: O1, H1: 7.5, H2: 1, H3: 1, H4: 51, ... (continues for all residents)
-Outdoor Space: O2, H1: 15.5, H2: 7, H3 4, H4: 5.5, ... (continues for all residents)
+Source Node: H1, H1: 7.5, H2: 1, H3: 1, H4: 51, ... (continues for all)
+Source Node: H1, O1: 15.5, O2: 7, O3 4, O4: 5.5, ... (continues for all)
+Source Node: O2, H1: 15.5, H2: 7, H3 4, H4: 5.5, ... (continues for all)
+Source Node: O2, O1: 15.5, O2: 7, O3 4, O4: 5.5, ... (continues for all)
