@@ -16,6 +16,16 @@ import sqlite3
 app = Flask(__name__)
 
 # --- Utility: General Q&A logic ---
+conversation_history = []
+
+geometry_command = {"geometry_command": 0}
+geometry_all_visible = False
+
+def print_answer(label, answer):
+    print(f"\n[{label.upper()} RESULT]")
+    print(answer)
+    print("-" * 50)
+
 def answer_general_question(user_message, conversation_history=None):
     if conversation_history is None:
         conversation_history = []
@@ -37,32 +47,26 @@ def answer_general_question(user_message, conversation_history=None):
             combined_answer += f"\n(Error for: \"{part_text}\")\n{fallback}"
     return combined_answer.strip()
 
-# --- General Q&A endpoint (for General tab) ---
+# ---- Flask API ----
+app = Flask(__name__)
+
 @app.route('/general_question', methods=['POST'])
 def handle_general_question():
     try:
+        start = time.time()
+        print("Received question request")
         data = request.get_json()
+        print("Data received:", data)
         user_message = data.get('question', '')
         conv_hist = data.get('conversation_history', [])
         answer = answer_general_question(user_message, conv_hist)
         conv_hist.append({"role": "user", "content": user_message})
         conv_hist.append({"role": "assistant", "content": answer})
+        print("Returning response, elapsed:", time.time() - start, "seconds")
         return jsonify({'response': answer, 'conversation_history': conv_hist})
     except Exception as e:
+        print("Error:", e)
         return jsonify({'response': f"Server error: {e}", 'conversation_history': []}), 500
-
-# --- SQL Q&A endpoint (for direct SQL tab, if needed) ---
-@app.route('/sql_gh', methods=['POST'])
-def handle_grasshopper_input():
-    data = request.get_json()
-    user_question = data.get('question', '')
-    answer = answer_general_question(user_question)
-    return jsonify({'response': answer})
-
-# --- Geometry endpoints ---
-last_geometry_key = {"key": None}
-geometry_command = {"geometry_command": 0}
-geometry_all_visible = False
 
 @app.route('/set_geometry', methods=['POST'])
 def set_geometry():
@@ -71,13 +75,35 @@ def set_geometry():
     if data.get("geometry_command") == "toggle_all":
         geometry_all_visible = not geometry_all_visible
         geometry_command = {"geometry_command": "show_all" if geometry_all_visible else "hide_all"}
+        return jsonify({"status": "ok", "visible": geometry_all_visible})
+    elif data.get("geometry_command") == "show_all":
+        geometry_all_visible = True
+        geometry_command = {"geometry_command": "show_all"}
+        return jsonify({"status": "ok", "visible": True})
+    elif data.get("geometry_command") == "hide_all":
+        geometry_all_visible = False
+        geometry_command = {"geometry_command": "hide_all"}
+        return jsonify({"status": "ok", "visible": False})
     else:
+        # This is for specific geometry (level, space_info, apt_info)
         geometry_command = data
-    return jsonify({"status": "ok", "visible": geometry_all_visible})
+        return jsonify({"status": "ok"})
 
 @app.route('/get_geometry', methods=['GET'])
 def get_geometry():
     return jsonify(geometry_command)
+
+
+
+
+
+
+
+# --- Geometry endpoints ---
+last_geometry_key = {"key": None}
+geometry_command = {"geometry_command": 0}
+geometry_all_visible = False
+
 
 @app.route('/show_geometry_by_key', methods=['POST'])
 def show_geometry_by_key():
@@ -143,7 +169,7 @@ def llm_negotiate_action():
         'params': params_text,
         'context': context
     })
-
+#//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 # --- Robust Nearby Space Q&A endpoint (for Q&A tab, with context, history, and LLM prompt logic) ---
 conversation_histories = {}
 last_contexts = {}
@@ -154,6 +180,170 @@ def llm_nearby_space_qna():
     question = data.get("question", "")
     if not house_key or not question:
         return jsonify({"error": "Missing 'house_key' or 'question' in request."}), 400
+
+
+    #DISTANCE RELATED QUESTIONS
+    distances_all = pd.read_csv('resident_data/resident_distances_all.csv')
+    distances_all.columns = [c.strip() for c in distances_all.columns]
+    distances_all['Source Node'] = distances_all['Source Node'].astype(str).str.strip()
+    # If you use SQLite, do the same:
+    conn = sqlite3.connect('sql/gh_data.db')
+    distances = pd.read_sql_query("SELECT * FROM resident_distances", conn)
+    distances['Outdoor Space'] = distances['Outdoor Space'].astype(str).str.strip()
+    conn.close()
+
+    if re.search(r"\b(how far|distance from my house|distance to my house|distance)\b", question.lower()):
+        response_text = (
+            "To check the distance from your house to any outdoor space, "
+            "please refer to the file: resident_data/resident_distances_all.csv"
+        )
+        return jsonify({"response": response_text})
+
+
+    #ASSIGNED ACTIVITIES BY LLM
+    assignments = pd.read_csv('llm_reasoning/llm_activity_assignments.csv')
+    assignments['assigned_activity'] = assignments['assigned_activity'].astype(str).str.strip().str.lower()
+    assignments['space_id'] = assignments['space_id'].astype(str).str.strip()
+
+
+
+
+    # Try to find an activity mentioned in the question (case-insensitive)
+    activity_names = assignments['assigned_activity'].unique()
+    question_lower = question.lower()
+    activity_mentioned = None
+    for act in activity_names:
+        if act in question_lower and re.search(r"\b(which|what|list|show)\b.*\b(space|area|building)", question_lower):
+            activity_mentioned = act
+            break
+
+    if activity_mentioned:
+        filtered = assignments[assignments['assigned_activity'] == activity_mentioned]
+        # Only keep space_ids that start with 'O'
+        filtered = filtered[filtered['space_id'].str.startswith('O')]
+        if filtered.empty:
+            response_text = f"No outdoor spaces are assigned to {activity_mentioned.title()}."
+        else:
+            # Build list with distances for each assigned space
+            house_col = house_key.strip()
+            space_distances = []
+            for space_id in filtered['space_id']:
+                space_id_str = str(space_id).strip()
+                row = distances_all[distances_all['Source Node'] == space_id_str]
+                if not row.empty and house_col in distances_all.columns:
+                    dist = row.iloc[0][house_col]
+                    try:
+                        dist = float(dist)
+                        dist_str = f"{dist:.1f}m"
+                    except Exception:
+                        dist_str = str(dist)
+                else:
+                    dist_str = "unknown"
+                # This will always show O5, O10, etc.
+                space_distances.append(f"{space_id_str} ({dist_str})")
+            response_text = f"The following outdoor spaces are assigned to {activity_mentioned.title()}: {', '.join(space_distances)}"
+        return jsonify({"response": response_text})
+
+
+
+
+
+
+        # --- Neighbors Q&A logic ---
+    if re.search(r"\b(neighbor|neighbour|closest houses|who lives near|nearby residents|best matching neighbors|neighbors like me|similar neighbors|matching neighbors)\b", question.lower()):
+        conn = sqlite3.connect('sql/gh_data.db')
+        personas = pd.read_sql_query("SELECT * FROM personas_assigned", conn)
+        conn.close()
+        personas['resident_key'] = personas['resident_key'].astype(str).str.strip()
+        house_key_str = str(house_key).strip()
+
+        distances = pd.read_csv('resident_data/resident_distances_all.csv')
+        distances.columns = [c.strip() for c in distances.columns]
+        distances['Source Node'] = distances['Source Node'].astype(str).str.strip()
+
+        if re.search(r"\b(best matching neighbors|neighbors like me|similar neighbors|matching neighbors)\b", question.lower()):
+            # --- Best Matching Neighbors (by Persona) ---
+            user_row = personas[personas['resident_key'] == house_key_str]
+            if user_row.empty:
+                return jsonify({"response": f"Cannot find your persona for house {house_key_str}."})
+            
+            user_persona = user_row.iloc[0]['resident_persona']
+            matching_neighbors = personas[
+                (personas['resident_persona'] == user_persona) &
+                (personas['resident_key'] != house_key_str) &
+                (personas['resident_key'].str.startswith('H'))  # 🔑 Only houses
+            ]
+
+            # Find row of distances for house_key
+            if house_key_str not in distances['Source Node'].values:
+                return jsonify({"response": f"Cannot find distances for your house ({house_key_str})."})
+
+            dist_row = distances[distances['Source Node'] == house_key_str].iloc[0]
+
+            neighbor_distances = []
+            for _, row in matching_neighbors.iterrows():
+                neighbor_key = str(row['resident_key']).strip()
+                if not neighbor_key.startswith('H'):
+                    continue  # 🧱 Skip non-house keys
+                dist_val = dist_row.get(neighbor_key, "unknown")
+
+                pop = row.get('resident_population', 'unknown')
+                age = row.get('age', 'unknown')
+                status = row.get('tenant/owner', 'unknown')
+
+                neighbor_distances.append(f"{neighbor_key}: {dist_val}m away | Population: {pop} | Age: {age} | {status}")
+            
+            if not neighbor_distances:
+                response_text = "No matching neighbors found."
+            else:
+                response_text = f"Neighbors with the same persona ({user_persona}):\n" + "\n".join(neighbor_distances)
+
+            return jsonify({"response": response_text})
+        
+        else:
+            # --- Nearest Physical Neighbors ---
+            if house_key_str not in distances['Source Node'].values:
+                return jsonify({"response": f"Cannot find distances for your house ({house_key_str})."})
+
+            row = distances[distances['Source Node'] == house_key_str].iloc[0]
+
+            neighbor_distances = []
+            for col in distances.columns:
+                if col == 'Source Node' or col == house_key_str or not col.startswith('H'):
+                    continue  # 🧱 Skip self and non-house columns
+                dist = row[col]
+                neighbor_key = col
+                persona_row = personas[personas['resident_key'] == neighbor_key]
+                if not persona_row.empty:
+                    persona = persona_row.iloc[0].get('resident_persona', 'unknown')
+                    pop = persona_row.iloc[0].get('resident_population', 'unknown')
+                    age = persona_row.iloc[0].get('age', 'unknown')
+                    status = persona_row.iloc[0].get('tenant/owner', 'unknown')
+                else:
+                    persona, pop, age, status = "unknown", "unknown", "unknown", "unknown"
+                neighbor_distances.append({
+                    "neighbor_key": neighbor_key,
+                    "dist": dist,
+                    "persona": persona,
+                    "pop": pop,
+                    "age": age,
+                    "status": status
+                })
+
+            # Sort and show closest 5
+            neighbor_distances = sorted(neighbor_distances, key=lambda x: float(x["dist"]) if str(x["dist"]).replace('.','',1).isdigit() else float('inf'))
+            neighbor_info = [
+                f"{n['neighbor_key']}: {n['dist']}m away | Persona: {n['persona']} | Population: {n['pop']} | Age: {n['age']} | {n['status']}"
+                for n in neighbor_distances[:5]
+            ]
+            response_text = "Closest 5 neighbors:\n" + "\n".join(neighbor_info)
+            return jsonify({"response": response_text})
+
+
+
+
+
+
     # --- Conversation history logic ---
     history = conversation_histories.setdefault(house_key, [])
     history.append({"role": "user", "content": question})
@@ -177,6 +367,10 @@ def llm_nearby_space_qna():
     if last_activity:
         resolved_question = re.sub(r"\bthis activity\b", last_activity, resolved_question, flags=re.IGNORECASE)
     question = resolved_question
+
+
+
+
     # --- Handle resident-specific voting preferences directly ---
     match_weights = re.search(r'my\s+(weights?|preferences|votes?)\s+for\s+(O\d+)', question, re.IGNORECASE)
     if match_weights:
@@ -237,7 +431,13 @@ def llm_nearby_space_qna():
         conn.close()
         voting = pd.read_csv('resident_data/voting_weights.csv')
         assignments = pd.read_csv('llm_reasoning/llm_activity_assignments.csv')
-        personas = pd.read_csv('resident_data/personas.csv') if os.path.exists('resident_data/personas.csv') else None
+
+        conn = sqlite3.connect('sql/gh_data.db')  # Use your actual DB path
+        # Load personas
+        personas = pd.read_sql_query("SELECT * FROM personas_assigned", conn)
+        conn.close()
+
+
         if house_key not in distances.columns:
             return jsonify({"error": f"No distances found for house key {house_key}."}), 404
         user_persona = None
@@ -323,7 +523,7 @@ You are a community advisor helping a resident understand the outdoor spaces nea
 - If the question is about the list, provide the list.
 - If the question is about how decisions are made, explain the process using the data.
 - If the question is about preferences, summarize the relevant voting or assignment data.
-- If the question is about spaces with a specific activity (e.g., 'Sports'), search the full list of all outdoor spaces and their assigned activities above, not just the closest ones, and list all such spaces.
+- If the question is about spaces with a specific activity (e.g., 'Sports'), go through the full list of assigned activities in the table above and extract every space ID that has the assigned activity exactly matching 'Sports'. Then list them all. Do not guess.
 - If the question is something else, use your best judgment to answer using all the context above.
 Be concise and use plain language.
 """
@@ -342,6 +542,7 @@ Be concise and use plain language.
         return jsonify({"response": reply})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(port=5000, debug=True)

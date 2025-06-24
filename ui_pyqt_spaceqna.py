@@ -6,6 +6,21 @@ from PyQt5.QtWidgets import (
     QHBoxLayout, QComboBox, QFrame, QTextEdit, QTabWidget
 )
 from PyQt5.QtCore import Qt
+import socket
+import re
+
+
+
+#new gh connection ghowl for show and hide space keys automatically
+def send_udp_command_1(message, port=7000):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.sendto(message.encode("utf-8"), ("127.0.0.1", port))
+    sock.close()
+
+def extract_space_keys(text):
+    """Extract all unique Hxx and Oxx keys from a string."""
+    return set(re.findall(r'\b[HO]\d+\b', text))
+
 
 class SpaceQnAUI(QMainWindow):
     def __init__(self):
@@ -148,6 +163,10 @@ class SpaceQnAUI(QMainWindow):
                   <b>Assistant:</b> {answer}
                 </div>'''
                 self.qna_display.append(html)
+                # After you get the answer (or even before sending, if you want to show user keys)
+                keys_str = self.update_detected_keys(question, answer)
+                send_udp_command_1(keys_str, port=7000)
+                self.qna_display.append(f"<b>Detected keys:</b> {keys_str}")
             else:
                 self.qna_display.append(
                     f"<span style='color: red;'>Server error: {resp.status_code}</span>"
@@ -156,6 +175,7 @@ class SpaceQnAUI(QMainWindow):
             self.qna_display.append(
                 f"<span style='color: red;'>Error connecting to server: {e}</span>"
             )
+
 #NEGOIATE
     def send_negotiate(self):
         house_key = self.neg_house_key_input.text().strip()
@@ -292,6 +312,26 @@ class SpaceQnAUI(QMainWindow):
             except Exception as e:
                 self.qna_display.append(f"<span style='color: red;'>Error connecting to server: {e}</span>")
             self.show_geom_btn.setText("Show Geometry")
+
+
+
+
+    def update_detected_keys(self, user_text, answer_text):
+        """
+        Update and return the current set of detected space keys from user and answer.
+        - user_text: string from the input field
+        - answer_text: string from the assistant's answer
+        """
+        user_keys = extract_space_keys(user_text)
+        answer_keys = extract_space_keys(answer_text)
+        # If answer has new keys, use those; else, keep user keys
+        if answer_keys:
+            self.current_detected_keys = answer_keys
+        elif user_keys:
+            self.current_detected_keys = user_keys
+        # If neither, keep previous keys (if any)
+        keys_str = "|".join(sorted(self.current_detected_keys)) if hasattr(self, "current_detected_keys") else ""
+        return keys_str
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

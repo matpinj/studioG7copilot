@@ -1,81 +1,82 @@
 {
   "young_professionals": {
-    "Flexible Space": 0.25,
-    "Creative Corridor": 0.20,
-    "Outdoor Meeting Room": 0.15,
-    "Outdoor Cinema/Event Space": 0.25,
-    "Community Pool/BBQ": 0.15
+    "Sports": 0.35,
+    "Outdoor Cinema/Event Space": 0.30,
+    "Community Pool/BBQ": 0.35
   },
   "musicians": {
-    "Creative Corridor": 0.30,
-    "Outdoor Cinema/Event Space": 0.30,
+    "Outdoor Cinema/Event Space": 0.40,
+    "Creative Corridor": 0.25,
     "Flexible Space": 0.15,
-    "Offline Retreat": 0.15,
-    "Viewpoint": 0.10
+    "Offline Retreat": 0.10,
+    "Viewpoint": 0.09,
+    "Residents Space": 0.01
   },
   "academics": {
-    "Offline Retreat": 0.30,
+    "Offline Retreat": 0.20,
     "Outdoor Meeting Room": 0.25,
-    "Flexible Space": 0.15,
-    "Creative Corridor": 0.10,
+    "Flexible Space": 0.14,
+    "Creative Corridor": 0.20,
     "Viewpoint": 0.15,
-    "Healing Garden": 0.05
+    "Healing Garden": 0.05,
+    "Residents Space": 0.01
   },
   "gardeners/food_lovers": {
     "Urban Agriculture Garden": 0.30,
-    "Healing Garden": 0.20,
-    "Biodiversity Balcony": 0.15,
-    "Viewpoint": 0.15,
+    "Healing Garden": 0.25,
+    "Biodiversity Balcony": 0.05,
+    "Viewpoint": 0.11,
     "Green Corridor": 0.10,
-    "Offline Retreat": 0.05,
-    "Community Pool/BBQ": 0.05
+    "Offline Retreat": 0.14,
+    "Community Pool/BBQ": 0.05,
+    "Residents Space": 0.01
   },
   "active_later_living": {
     "Healing Garden": 0.25,
     "Green Corridor": 0.20,
-    "Offline Retreat": 0.15,
-    "Sunbath": 0.10,
-    "Community Pool/BBQ": 0.20,
-    "Sports": 0.10
+    "Sunbath": 0.04,
+    "Community Pool/BBQ": 0.30,
+    "Sports": 0.20,
+    "Residents Space": 0.01
   },
   "influencers": {
     "Outdoor Cinema/Event Space": 0.25,
-    "Creative Corridor": 0.20,
+    "Creative Corridor": 0.10,
     "Viewpoint": 0.20,
     "Flexible Space": 0.15,
-    "Community Pool/BBQ": 0.10,
-    "Sunbath": 0.10
+    "Community Pool/BBQ": 0.25,
+    "Residents Space": 0.05
   },
   "travelers/expats": {
-    "Flexible Space": 0.22,
-    "Community Pool/BBQ": 0.18,
-    "Outdoor Cinema/Event Space": 0.16,
-    "Urban Agriculture Garden": 0.10,
+    "Flexible Space": 0.10,
+    "Community Pool/BBQ": 0.40,
+    "Outdoor Cinema/Event Space": 0.25,
     "Viewpoint": 0.10,
-    "Offline Retreat": 0.09
+    "Offline Retreat": 0.09,
+    "Residents Space": 0.01
   },
   "sporties": {
-    "Playground": 0.20,
-    "Sports": 0.40,
-    "Community Pool/BBQ": 0.20,
-    "Sunbath": 0.15,
-    "Viewpoint": 0.05
+    "Playground": 0.10,
+    "Sports": 0.50,
+    "Community Pool/BBQ": 0.30,
+    "Sunbath": 0.04,
+    "Viewpoint": 0.05,
+    "Residents Space": 0.01
   },
   "night_owls": {
     "Outdoor Cinema/Event Space": 0.30,
-    "Creative Corridor": 0.20,
-    "Flexible Space": 0.15,
-    "Viewpoint": 0.10,
-    "Sitting": 0.10,
-    "Community Pool/BBQ": 0.10,
-    "Outdoor Meeting Room": 0.05
+    "Creative Corridor": 0.15,
+    "Viewpoint": 0.05,
+    "Residents Space": 0.05,
+    "Community Pool/BBQ": 0.35,
+    "Outdoor Meeting Room": 0.10
   },
   "diy_enthusiasts/creatives": {
     "Creative Corridor": 0.35,
     "Flexible Space": 0.25,
-    "Outdoor Meeting Room": 0.15,
+    "Outdoor Meeting Room": 0.19,
     "Urban Agriculture Garden": 0.10,
     "Offline Retreat": 0.05,
-    "Sunbath": 0.10
+    "Residents Space": 0.01
   }
 }

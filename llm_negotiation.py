@@ -12,11 +12,25 @@ def load_csvs():
     conn = sqlite3.connect('sql/gh_data.db')
     geometries = pd.read_sql_query("SELECT * FROM activity_space", conn)
     geometries.rename(columns={"key": "id"}, inplace=True)
+    print("Raw keys from DB:", geometries['id'].tolist())
+    geometries["id"] = geometries["id"].apply(lambda x: f"O{x}" if not str(x).startswith("O") else str(x))
     conn.close()
-    thresh = pd.read_csv('ml_models/threshold_predictions.csv')
-    green = pd.read_csv('ml_models/green_predictions.csv')
-    usability = pd.read_csv('ml_models/usability_predictions.csv')
+
+    # Load CSV prediction from ML for baked file it is comment out
+    # thresh = pd.read_csv('ml_models/threshold_predictions.csv')
+    # green = pd.read_csv('ml_models/green_predictions.csv')
+    # usability = pd.read_csv('ml_models/usability_predictions.csv')
+    # voting = pd.read_csv('resident_data/voting_weights.csv')
+
+    # Load the combined CSV
+    multi = pd.read_csv('gh_data/gh_data_multiple_activities.csv')
+    multi = multi.rename(columns={'key': 'id'})
+    thresh = multi[['id', 'activity']].rename(columns={'activity': 'predicted_activities'})
+    green = multi[['id', 'green_suitability']].rename(columns={'green_suitability': 'green_prediction'})
+    usability = multi[['id', 'usability']].rename(columns={'usability': 'usability_prediction'})
+    # Load voting weights
     voting = pd.read_csv('resident_data/voting_weights.csv')
+    conn = sqlite3.connect('sql/gh_data.db')  # Use your actual DB path
     conn = sqlite3.connect('sql/gh_data.db')
     distances = pd.read_sql_query("SELECT * FROM resident_distances", conn)
     distances.rename(columns={"Outdoor Space": "id"}, inplace=True)
