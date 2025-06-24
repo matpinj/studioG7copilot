@@ -22,7 +22,7 @@ import socket
 #added for automated LLM reasoning activity assignments
 from llm_reasoning_test import generate_llm_assignments
 
-def send_udp_command(command: str, port: int = 6000, host: str = "127.0.0.1"):
+def send_udp_command(command: str, port: int = 5004, host: str = "127.0.0.1"):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.sendto(command.encode("utf-8"), (host, port))
 
@@ -43,14 +43,24 @@ class RequestWorker(QThread):
 
     def run(self):
         try:
-            r = requests.post(self.endpoint, json=self.payload, timeout=self.timeout) # If self.timeout is None, it waits indefinitely
-            if r.status_code == 204: # No Content
-                # Emit a specific dictionary or handle as an error/empty response
+            r = requests.post(self.endpoint, json=self.payload, timeout=self.timeout)
+            if r.status_code == 204:
                 self.finished.emit({"message": "No content from server.", "status_code": 204})
             else:
-                r.raise_for_status() # Raise an exception for bad status codes (4xx or 5xx)
-                data = r.json()
-                self.finished.emit(data)
+                try:
+                    r.raise_for_status()
+                    data = r.json()
+                    self.finished.emit(data)
+                except requests.exceptions.HTTPError as http_err:
+                    # Try to get JSON error from response
+                    try:
+                        error_json = r.json()
+                        self.error.emit(json.dumps(error_json))
+                    except Exception:
+                        # Fallback: emit the error as string
+                        self.error.emit(str(http_err))
+                except Exception as e:
+                    self.error.emit(str(e))
         except Exception as e:
             self.error.emit(str(e))
 
@@ -684,44 +694,51 @@ class GeometryWorkflowTab(QWidget):
         self.worker.error.connect(self.handle_submit_error)
         self.worker.start()
     def handle_submit_response(self, data):
-        # This now handles the direct LLM response or status from the server
         self.send_btn.setEnabled(True)
-
         if "error" in data:
             self.response_display.append(f"<b>Server Error:</b> {data.get('error')}")
             if "details" in data:
                 self.response_display.append(f"<i>Details: {data.get('details')}</i>")
             return
 
-        # Attempt to display a more focused answer
         user_question = data.get("user_question_for_suggestion", "").lower()
         suggestions = data.get("suggestions", [])
         summary = data.get("summary_reasoning", "No summary provided.")
-        
+
         display_text = f"<b>LLM Response:</b>\n"
 
         if suggestions and isinstance(suggestions, list) and len(suggestions) > 0:
             suggestion = suggestions[0] # Assuming one suggestion
             display_text += f"<b>Suggestion:</b> {suggestion.get('variation_name', 'N/A')}\n"
             display_text += f"<i>Description:</i> {suggestion.get('description', 'N/A')}\n"
+            # Send suggestion description to Grasshopper via UDP
+            send_udp_command(json.dumps(data))
 
-            if "other householders" in user_question or "who else" in user_question or "other beneficiaries" in user_question:
-                beneficiaries = suggestion.get("other_beneficiaries")
-                if beneficiaries:
-                    display_text += f"<b>Other Beneficiaries:</b> {', '.join(beneficiaries)}\n"
-        
         display_text += f"\n<b>Summary Reasoning:</b> {summary}"
         self.response_display.append(display_text)
-        # For debugging, you can still print the full JSON to the console or a log
-        # print(f"Full server response: {json.dumps(data, indent=2)}")
+            # For debugging, you can still print the full JSON to the console or a log
+            # print(f"Full server response: {json.dumps(data, indent=2)}")
 
     def handle_submit_error(self, error_msg):
-        self.response_display.append(f"<b>Error Submitting Job:</b> {error_msg}")
-        self.send_btn.setEnabled(True)
-
-    def handle_submit_error(self, error_msg):
-        self.response_display.append(f"<b>Error Submitting Job:</b> {error_msg}")
-        self.send_btn.setEnabled(True)
+        try:
+            import re, json
+            # Look for JSON in the error message
+            json_match = re.search(r'(\{.*\})', error_msg)
+            if json_match:
+                try:
+                    error_json = json.loads(json_match.group(1))
+                    # Show the detailed error if present
+                    if "error" in error_json:
+                        self.response_display.append(f"<b>Server Error:</b> {error_json['error']}")
+                        if "details" in error_json:
+                            self.response_display.append(f"<i>Details: {error_json['details']}</i>")
+                        return
+                except Exception:
+                    pass
+            # Fallback: show the raw error message
+            self.response_display.append(f"<b>Error Submitting Job:</b> {error_msg}")
+        finally:
+            self.send_btn.setEnabled(True)
 
 # Global variable to hold the server process
 flask_server_process = None
