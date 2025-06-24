@@ -1,6 +1,7 @@
 # d:\01_IAAC\03_aia studio\studioG7copilot\geometry_orchestrator.py
 import sys # Add sys import
 import os # Add os import
+import demjson3
 
 # Add the project root directory to sys.path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -18,6 +19,7 @@ import re
 import json 
 import os
 import pandas as pd # Added for CSV handling
+import string
 
 # Define paths for ML predictions CSVs
 GREEN_PREDICTIONS_CSV_PATH = os.path.join(os.path.dirname(__file__), "..", "ml_models", "green_predictions.csv")
@@ -25,7 +27,7 @@ THRESHOLD_PREDICTIONS_CSV_PATH = os.path.join(os.path.dirname(__file__), "..", "
 USABILITY_PREDICTIONS_CSV_PATH = os.path.join(os.path.dirname(__file__), "..", "ml_models", "usability_predictions.csv")
 LLM_ACTIVITY_ASSIGNMENTS_CSV_PATH = os.path.join(os.path.dirname(__file__), "..", "llm_reasoning", "llm_activity_assignments.csv") # Corrected path assuming it's in llm_reasoning
 VOTING_WEIGHTS_CSV_PATH = os.path.join(os.path.dirname(__file__), "..", "resident_data", "voting_weights.csv") # type: ignore
-STUDIO_EXPORT_CSV_PATH = os.path.join(os.path.dirname(__file__), "..", "gh_data", "studio_export_ml.csv") # Path to studio_export_ml.csv in gh_data folder
+# STUDIO_EXPORT_CSV_PATH = os.path.join(os.path.dirname(__file__), "..", "gh_data", "studio_export_ml.csv") # Path to studio_export_ml.csv in gh_data folder
 RESIDENT_DISTANCES_CSV_PATH = os.path.join(os.path.dirname(__file__), "..", "resident_data", "resident_distances.csv")
 
 
@@ -40,13 +42,13 @@ _loaded_threshold_predictions_df = None
 _loaded_usability_predictions_df = None
 _loaded_llm_activity_assignments_df = None
 _loaded_voting_weights_df = None # type: ignore
-_loaded_studio_export_df = None
+# _loaded_studio_export_df = None
 _loaded_resident_distances_df = None
 
 def _load_csv_data(csv_path, df_cache_attr_name):
     """Helper function to load and cache a CSV file."""
     # Ensure all global df caches are accessible
-    global _loaded_green_predictions_df, _loaded_threshold_predictions_df, _loaded_usability_predictions_df, _loaded_llm_activity_assignments_df, _loaded_voting_weights_df, _loaded_studio_export_df, _loaded_resident_distances_df
+    global _loaded_green_predictions_df, _loaded_threshold_predictions_df, _loaded_usability_predictions_df, _loaded_llm_activity_assignments_df, _loaded_voting_weights_df, _loaded_resident_distances_df
 
     
     df_cache = globals()[df_cache_attr_name]
@@ -84,8 +86,8 @@ def load_llm_activity_assignments_df():
 def load_voting_weights_df():
     return _load_csv_data(VOTING_WEIGHTS_CSV_PATH, "_loaded_voting_weights_df")
 
-def load_studio_export_df():
-    return _load_csv_data(STUDIO_EXPORT_CSV_PATH, "_loaded_studio_export_df")
+# def load_studio_export_df():
+#     return _load_csv_data(STUDIO_EXPORT_CSV_PATH, "_loaded_studio_export_df")
 
 def load_resident_distances_df():
     return _load_csv_data(RESIDENT_DISTANCES_CSV_PATH, "_loaded_resident_distances_df")
@@ -120,7 +122,7 @@ def get_intelligent_geometric_suggestions(space_id: str, resident_key: str, user
     green_df = load_green_predictions_df()
     thresh_df = load_threshold_predictions_df()
     usability_df = load_usability_predictions_df()
-    studio_export_df = load_studio_export_df() # Load the studio export CSV
+    # studio_export_df = load_studio_export_df() # Load the studio export CSV
     resident_distances_df = load_resident_distances_df() # Load resident distances CSV
 
 
@@ -132,15 +134,15 @@ def get_intelligent_geometric_suggestions(space_id: str, resident_key: str, user
     threshold_pred_val = _get_prediction_from_df(thresh_df, space_id_str, 'predicted_activities')
     usability_pred_val = _get_prediction_from_df(usability_df, space_id_str, 'usability_prediction')
 
-    # Retrieve details from studio_export.csv
-    studio_export_details_str = "N/A"
-    if not studio_export_df.empty and 'space_id' in studio_export_df.columns:
-        # Ensure space_id_str is compared with string version of 'space_id' column
-        space_export_data = studio_export_df[studio_export_df['space_id'].astype(str) == space_id_str]
-        if not space_export_data.empty:
-            # Convert the row to a JSON string or key-value pairs
-            studio_export_details_str = space_export_data.iloc[0].to_json()
-            # Or: studio_export_details_str = "; ".join([f"{col}: {val}" for col, val in space_export_data.iloc[0].items() if pd.notna(val)])
+    # # Retrieve details from studio_export.csv
+    # studio_export_details_str = "N/A"
+    # if not studio_export_df.empty and 'space_id' in studio_export_df.columns:
+    #     # Ensure space_id_str is compared with string version of 'space_id' column
+    #     space_export_data = studio_export_df[studio_export_df['space_id'].astype(str) == space_id_str]
+    #     if not space_export_data.empty:
+    #         # Convert the row to a JSON string or key-value pairs
+    #         studio_export_details_str = space_export_data.iloc[0].to_json()
+    #         # Or: studio_export_details_str = "; ".join([f"{col}: {val}" for col, val in space_export_data.iloc[0].items() if pd.notna(val)])
 
     # Load resident-specific data
     voting_df = load_voting_weights_df()
@@ -204,6 +206,13 @@ def get_intelligent_geometric_suggestions(space_id: str, resident_key: str, user
             prefs = dict(zip(resident_voting_data_for_space['activity'], resident_voting_data_for_space['weight']))
             if prefs:
                 activity_weights_for_resident_str = ", ".join([f"{act}: {w:.2f}" for act, w in prefs.items()])
+
+    resident_voting_data_for_space = voting_df[
+    (voting_df['resident'] == resident_key_str) & 
+    (voting_df['space'] == space_id_str)
+    ]
+    print(f"DEBUG: resident_voting_data_for_space for resident={resident_key_str}, space={space_id_str}:\n{resident_voting_data_for_space}")
+
 
     if not can_suggest_changes:
         return json.dumps({"error": f"Resident {resident_key_str} is not allowed to change the geometry of space {space_id_str}. Reason: Resident must have 'owner' status for this space to suggest changes."})
@@ -276,7 +285,7 @@ def get_intelligent_geometric_suggestions(space_id: str, resident_key: str, user
         distance_to_space=str(distance_to_space), # Ensure it's a string
         activity_weights_for_resident=activity_weights_for_resident_str, # type: ignore
         current_activity_in_space=current_activity_in_space,
-        studio_export_details=studio_export_details_str,
+        # studio_export_details=studio_export_details_str,
         user_question_for_suggestion=user_question if user_question else "General suggestions requested.",
         desired_activity_for_space=desired_activity_for_space if desired_activity_for_space else "Not specified",
         other_residents_summary=other_residents_benefit_summary # Pass the new summary
@@ -284,6 +293,8 @@ def get_intelligent_geometric_suggestions(space_id: str, resident_key: str, user
 
     # Clean and parse the JSON string response from LLM
     cleaned_json_str = suggestions_json_str
+
+    cleaned_json_str = remove_control_chars(cleaned_json_str)
     # First, try to find JSON within markdown-style code blocks
     match_markdown = re.search(r'```json\s*(\{[\s\S]*?\})\s*```', cleaned_json_str, re.DOTALL)
     if match_markdown:
@@ -302,10 +313,52 @@ def get_intelligent_geometric_suggestions(space_id: str, resident_key: str, user
         suggestions_data = json.loads(cleaned_json_str)
         return suggestions_data
     except json.JSONDecodeError as e:
-        # Log this error appropriately in a real application
-        print(f"JSONDecodeError in orchestrator for space_id {space_id}, resident {resident_key}: {e}. Raw: >>>{suggestions_json_str}<<< Cleaned: >>>{cleaned_json_str}<<<")
-        return {"error": "Failed to parse LLM response for geometric variations.", "details": str(e), "raw_response": suggestions_json_str, "cleaned_response": cleaned_json_str}
+        # Try to repair with demjson3 if available
+        try:
+            
+            suggestions_data = demjson3.decode(cleaned_json_str)
+            return suggestions_data
+        except Exception as e2:
+            print(f"demjson3 also failed: {e2}")
+            print(f"JSONDecodeError in orchestrator for space_id {space_id}, resident {resident_key}: {e}. Raw: >>>{suggestions_json_str}<<< Cleaned: >>>{cleaned_json_str}<<<")
+            return {"error": "Failed to parse LLM response for geometric variations.", "details": str(e), "raw_response": suggestions_json_str, "cleaned_response": cleaned_json_str}
+            # Try to repair with demjson3 if available
+            try:
+                import demjson3
+                suggestions_data = demjson3.decode(cleaned_json_str)
+                return suggestions_data
+            except Exception as e2:
+                print(f"demjson3 also failed: {e2}")
+                print(f"JSONDecodeError in orchestrator for space_id {space_id}, resident {resident_key}: {e}. Raw: >>>{suggestions_json_str}<<< Cleaned: >>>{cleaned_json_str}<<<")
+                return {"error": "Failed to parse LLM response for geometric variations.", "details": str(e), "raw_response": suggestions_json_str, "cleaned_response": cleaned_json_str}
+def remove_control_chars(s):
+    # Remove ASCII control characters except for \n, \t, \r
+    return ''.join(ch for ch in s if ch in string.printable or ch in '\n\r\t')
 
+def extract_largest_json_object(text):
+    """
+    Extracts the largest JSON object from a string.
+    Returns the JSON string or raises ValueError if not found.
+    """
+    stack = []
+    start = None
+    for i, c in enumerate(text):
+        if c == '{':
+            if not stack:
+                start = i
+            stack.append('{')
+        elif c == '}':
+            if stack:
+                stack.pop()
+                if not stack and start is not None:
+                    candidate = text[start:i+1]
+                    # Try to parse to check if it's valid JSON
+                    try:
+                        json.loads(candidate)
+                        return candidate
+                    except Exception:
+                        continue
+    raise ValueError("No valid JSON object found.")
 
 TABLE_DESCRIPTIONS_PATH = os.path.join(os.path.dirname(__file__), "knowledge", "table_descriptions.json")
 # Assuming example.db is in the project root's sql directory
