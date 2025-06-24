@@ -2,7 +2,7 @@
 import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-sys.path.insert(0, 'C:\\Users\\nseda\\Documents\\GitHub\\LLM-SQL-Retrieval')
+# sys.path.insert(0, 'C:\\Users\\nseda\\Documents\\GitHub\\LLM-SQL-Retrieval')
 from server.config import *
 import json
 import re

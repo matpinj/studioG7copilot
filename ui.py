@@ -1,10 +1,13 @@
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QTabWidget, QVBoxLayout, QHBoxLayout,
-    QTextEdit, QLineEdit, QPushButton, QLabel, QCheckBox, QComboBox, QSizePolicy
+    QTextEdit, QTextBrowser, QLineEdit, QPushButton, QLabel, QCheckBox, QComboBox, QSizePolicy
 )
 from PyQt5.QtCore import QThread, pyqtSignal, Qt
 from PyQt5.QtGui import QPalette, QColor
 import sys
+from html import escape
+import re
+
 
 #for gh_server_geometry
 import subprocess # For running the server script
@@ -22,12 +25,6 @@ from llm_reasoning_test import generate_llm_assignments
 def send_udp_command(command: str, port: int = 6000, host: str = "127.0.0.1"):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.sendto(command.encode("utf-8"), (host, port))
-
-
-# def send_udp_command2(command: str, port: int = 6001, host: str = "127.0.0.1"):
-#     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-#     print(f"Sending UDP command: {command} to {host}:{port}")  # Debugging
-#     sock.sendto(command.encode("utf-8"), (host, port))
 
 def send_udp_command2(message, port=6001):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -66,9 +63,61 @@ class ChatTab(QWidget):
         self.geometry_shown = False  # Track geometry state
 
         layout = QVBoxLayout()
-        self.chat_display = QTextEdit()
-        self.chat_display.setReadOnly(True)
+
+        # QTextBrowser
+        self.chat_display = QTextBrowser()
+        self.chat_display.setOpenExternalLinks(True)
+        self.chat_display.setStyleSheet("""
+            background-color: #111;
+            color: #eee;
+            border: none;
+            font-family: 'Segoe UI', 'Arial', 'Helvetica Neue', sans-serif;
+            font-size: 15px;
+        """)
         layout.addWidget(self.chat_display)
+
+        # CSS Styles for bubbles (only once!)
+        self.chat_style = """
+        <style>
+        .chat-user {
+            color: white;
+            margin: 12px 12px 12px 12px;
+            text-align: right;
+            max-width: 95%;
+            min-width: 40px;
+            width: fit-content;
+            font-size: 20px;
+            display: inline-block;
+            clear: both;
+            float: right;
+            word-break: break-word;
+            padding: 6px 16px 0px 16px;   
+            line-height: 1.5;             /* reduce line height */
+            vertical-align: middle;
+        }
+        .chat-bot {
+            color: white;
+            padding: 10px 16px;
+            margin: 12px 200px 12px 12px;
+            text-align: left;
+            font-size: 16px;
+            display: inline-block;
+            clear: both;
+            float: left;
+            word-break: break-word;
+        }
+        .chat-bot.error {
+            color: #b00;
+            border: 1px solid #b00;
+            border-radius: 20px;
+        }
+        </style>
+        """
+        self.chat_history_html = []  # Store all chat bubbles as HTML
+
+        # Set initial content with CSS (empty div to keep layout)
+        self.chat_display.setHtml(self.chat_style + "<div></div>")
+
 
         # General tab only UI elements
         if "general_question" in self.endpoint:
@@ -147,17 +196,34 @@ class ChatTab(QWidget):
         self.input_box = QLineEdit()
         self.send_btn = QPushButton("Send")
         self.send_btn.clicked.connect(self.send_message)
+        self.input_box.returnPressed.connect(self.send_message)  # <-- Add this line
         input_layout.addWidget(self.input_box)
         input_layout.addWidget(self.send_btn)
         layout.addLayout(input_layout)
 
         self.setLayout(layout)
 
+    def update_chat_display(self):
+        # Rebuild the full HTML with style and all bubbles
+        full_html = self.chat_style + ''.join(self.chat_history_html)
+        self.chat_display.setHtml(full_html)
+        self.chat_display.verticalScrollBar().setValue(self.chat_display.verticalScrollBar().maximum())
+
     def send_message(self):
         user_text = self.input_box.text()
         if not user_text:
             return
-        self.chat_display.append(f"<b>You:</b> {user_text}")
+        escaped_user_text = escape(user_text)
+        user_bubble = f'<div class="chat-user">{escaped_user_text}</div>'
+        self.chat_history_html.append(user_bubble)
+        self.update_chat_display()
+
+        # UI-driven geometry intent extraction
+        if self.parse_and_trigger_geometry(user_text):
+            self.input_box.clear()
+            return  # Do NOT send to LLM if geometry action was triggered
+
+        # Only send to LLM for text answer (no geometry intent flag)
         payload = {
             "question": user_text,
             "conversation_history": self.conversation_history
@@ -166,22 +232,33 @@ class ChatTab(QWidget):
 
         self.send_btn.setEnabled(False)
         self.worker = RequestWorker(self.endpoint, payload)
-        self.worker.finished.connect(self.handle_response)
         self.worker.error.connect(self.handle_error)
+        self.worker.finished.connect(self.handle_response)
         self.worker.start()
 
-    def handle_response(self, data):
-        answer = data.get("response", "No response")
-        self.conversation_history = data.get("conversation_history", [])
-        self.chat_display.append(f"<b>Bot:</b> {answer}")
-        self.send_btn.setEnabled(True)
-        self.input_box.clear()
+        self.input_box.clear() 
 
-    def handle_error(self, error_msg):
-        self.chat_display.append(f"<b>Error:</b> {error_msg}")
-        self.send_btn.setEnabled(True)
-        self.input_box.clear()
-
+    def trigger_geometry_display(self, level, info_type):
+        """
+        Sets dropdowns based on parsed level and info_type, then sends geometry command.
+        """
+        # Set level dropdown
+        if hasattr(self, "level_dropdown") and level and str(level).isdigit():
+            idx = self.level_dropdown.findText(str(int(level)))
+            if idx != -1:
+                self.level_dropdown.setCurrentIndex(idx)
+        # Set info dropdowns
+        info_type = (info_type or "").capitalize()
+        if hasattr(self, "space_info_dropdown") and info_type in [self.space_info_dropdown.itemText(i) for i in range(self.space_info_dropdown.count())]:
+            idx = self.space_info_dropdown.findText(info_type)
+            if idx != -1:
+                self.space_info_dropdown.setCurrentIndex(idx)
+        elif hasattr(self, "apt_info_dropdown") and info_type in [self.apt_info_dropdown.itemText(i) for i in range(self.apt_info_dropdown.count())]:
+            idx = self.apt_info_dropdown.findText(info_type)
+            if idx != -1:
+                self.apt_info_dropdown.setCurrentIndex(idx)
+        # Send the geometry command with the selected options
+        self.send_geometry_command()
 
     #for gh_server_script
     #region
@@ -219,10 +296,10 @@ class ChatTab(QWidget):
 
         # Encode space info to numeric value
         space_info_map = {
-            "Activity": 20,
+            "Activity": 23,
             "Area": 4,
             "UTCI": 8,
-            "Wind": 7,
+            "Wind": 10,
             "Orientation": 2
         }
         space_info_option = self.space_info_dropdown.currentText()
@@ -247,7 +324,6 @@ class ChatTab(QWidget):
             )
         except Exception as e:
             self.chat_display.append(f"<b>Error:</b> {e}")
-
 
     def toggle_all_geometry(self):
         if not self.geometry_shown:
@@ -285,9 +361,101 @@ class ChatTab(QWidget):
         except Exception as e:
             self.chat_display.append(f"<b>Error:</b> {e}")
 
+    def parse_and_trigger_geometry(self, user_text):
+        """
+        Detects geometry-related commands in user_text and triggers the appropriate geometry actions.
+        Returns True if a geometry action was triggered, else False.
+        """
+        text = user_text.lower().strip()
+
+        # Show all geometry
+        if re.search(r"\b(show|display|reveal)\s+(all\s+)?(building|geometry|spaces?)\b", text):
+            self.show_all_geometry(force=True)
+            return True
+
+        # Hide all geometry
+        if re.search(r"\b(hide|remove)\s+(all\s+)?(building|geometry|spaces?)\b", text):
+            self.hide_all_geometry(force=True)
+            return True
+
+        # Show specific level (e.g., "show level 1", "display level 2 apartments")
+        match = re.search(r"\b(show|display|reveal)\s+level\s+(\d+)", text)
+        if match:
+            level = int(match.group(2))
+            # Set dropdown if available
+            if hasattr(self, "level_dropdown"):
+                idx = self.level_dropdown.findText(str(level))
+                if idx != -1:
+                    self.level_dropdown.setCurrentIndex(idx)
+            # Optionally parse for apartment/space info
+            if "apartment" in text or "resident" in text:
+                if hasattr(self, "apt_info_dropdown"):
+                    idx = self.apt_info_dropdown.findText("Residents")
+                    if idx != -1:
+                        self.apt_info_dropdown.setCurrentIndex(idx)
+            self.send_geometry_command()
+            return True
+
+        # Show specific apartment (e.g., "show apartment key", "show residents")
+        if re.search(r"\b(show|display|reveal)\s+(apartment|resident|key|residents)\b", text):
+            if hasattr(self, "apt_info_dropdown"):
+                idx = self.apt_info_dropdown.findText("Residents")
+                if idx != -1:
+                    self.apt_info_dropdown.setCurrentIndex(idx)
+            self.send_geometry_command()
+            return True
+
+        # Hide selected geometry
+        if re.search(r"\b(hide|remove)\s+(selected|current|this)\s+(geometry|space|apartment)\b", text):
+            self.hide_specific_geometry()
+            return True
+
+        # Patterns for level and info type
+        level_pattern = r"(?:level\s*|lvl\s*|floor\s*)?(\d+)"
+        info_pattern = r"(area|activity|wind|usability|comfort|temperature|occupancy|residents|spaces|apartments|building|all)"
+        # Try to match queries like "show/display/what are ... in/of/for level X"
+        match = re.search(
+            rf"(show|display|what are|what is|give me|can you show|visualize|see|plot|present)[^\n]*?(?:{info_pattern})?[^\n]*?(?:in|of|for)?[^\n]*?{level_pattern}",
+            user_text, re.IGNORECASE
+        )
+        if match:
+            info = match.group(2) or "all"
+            level = match.group(3)
+            # Trigger geometry display for the specified level and info type
+            self.trigger_geometry_display(level=level, info_type=info)
+            return True
+
+        # Fallback: match "show all building" or "show all"
+        if re.search(r"show all (building|apartments|spaces)?", user_text, re.IGNORECASE):
+            self.trigger_geometry_display(level="all", info_type="all")
+            return True
+
+        # Add more patterns as needed...
+
+        return False
+
+    def handle_error(self, error_msg):
+        """
+        Handles errors from network/LLM requests and displays them in the chat.
+        """
+        error_html = f'<div class="chat-bot error"><b>Error:</b> {escape(error_msg)}</div><br>'
+        self.chat_history_html.append(error_html)
+        self.update_chat_display()
+        self.send_btn.setEnabled(True)
+        self.input_box.setEnabled(True)
+
+    def handle_response(self, data):
+        # Get the LLM response text
+        response_text = data.get("response", "No response from server.")
+        escaped_response = escape(response_text)
+        bot_bubble = f'<div class="chat-bot">{escaped_response}</div>'
+        self.chat_history_html.append(bot_bubble)
+        self.update_chat_display()
+        self.send_btn.setEnabled(True)
+        self.input_box.setEnabled(True)
 
 class WelcomeTab(QWidget):
-    def __init__(self, info_text):
+    def __init__(self, info_text, tab_widget=None):
         super().__init__()
         layout = QVBoxLayout()
         label = QLabel(info_text)
@@ -295,7 +463,79 @@ class WelcomeTab(QWidget):
         label.setAlignment(Qt.AlignTop | Qt.AlignLeft)
         label.setStyleSheet("font-size: 16px; padding: 20px;")
         layout.addWidget(label)
+
+        # Add "Fill Survey" button
+        self.fill_survey_btn = QPushButton("Fill Survey")
+        self.fill_survey_btn.clicked.connect(self.go_to_survey_tab)
+        layout.addWidget(self.fill_survey_btn)
+
         self.setLayout(layout)
+        self.tab_widget = tab_widget  # Store reference for navigation
+
+    def go_to_survey_tab(self):
+        if self.tab_widget:
+            # Survey tab is at index 1 (after Welcome)
+            self.tab_widget.setCurrentIndex(1)
+
+class SurveyTab(QWidget):
+    def __init__(self, tab_widget=None):
+        super().__init__()
+        layout = QVBoxLayout()
+
+        # Resident Key
+        self.resident_key_input = QLineEdit()
+        self.resident_key_input.setPlaceholderText("Enter Resident Key")
+        layout.addWidget(QLabel("Resident Key:"))
+        layout.addWidget(self.resident_key_input)
+
+        # Resident Persona
+        self.resident_persona_input = QLineEdit()
+        self.resident_persona_input.setPlaceholderText("Enter Resident Persona")
+        layout.addWidget(QLabel("Resident Persona:"))
+        layout.addWidget(self.resident_persona_input)
+
+        # Resident Population
+        self.resident_population_input = QLineEdit()
+        self.resident_population_input.setPlaceholderText("Enter Resident Population")
+        layout.addWidget(QLabel("Resident Population:"))
+        layout.addWidget(self.resident_population_input)
+
+        # Level
+        self.level_input = QLineEdit()
+        self.level_input.setPlaceholderText("Enter Level")
+        layout.addWidget(QLabel("Level:"))
+        layout.addWidget(self.level_input)
+
+        # Age
+        self.age_input = QLineEdit()
+        self.age_input.setPlaceholderText("Enter Age")
+        layout.addWidget(QLabel("Age:"))
+        layout.addWidget(self.age_input)
+
+        # Tenant/Owner
+        self.tenant_owner_input = QLineEdit()
+        self.tenant_owner_input.setPlaceholderText("Enter Tenant/Owner")
+        layout.addWidget(QLabel("Tenant/Owner:"))
+        layout.addWidget(self.tenant_owner_input)
+
+        # Add "Submit Survey" button (fake, does nothing)
+        self.submit_survey_btn = QPushButton("Submit Survey")
+        # No action connected
+        layout.addWidget(self.submit_survey_btn)
+
+        # Navigation button
+        self.ask_general_btn = QPushButton("Ask general questions")
+        self.ask_general_btn.clicked.connect(self.go_to_general_tab)
+        layout.addWidget(self.ask_general_btn)
+
+        layout.addStretch(1)
+        self.setLayout(layout)
+        self.tab_widget = tab_widget  # Store reference for navigation
+
+    def go_to_general_tab(self):
+        if self.tab_widget:
+            # Assuming General tab is at index 2 (after Welcome and Survey)
+            self.tab_widget.setCurrentIndex(2)
 
 class MainWindow(QWidget):
     def __init__(self):
@@ -310,7 +550,7 @@ class MainWindow(QWidget):
         layout = QVBoxLayout()
         tabs = QTabWidget()
 
-        # Add Welcome tab first
+        # Add Welcome tab first, pass tabs for navigation
         welcome_text = (
             "Welcome to Copilot for Residents!\n\n"
             "This tool helps you explore, interact with, and ask questions about your building and its spaces.\n\n"
@@ -325,7 +565,12 @@ class MainWindow(QWidget):
             "4. Use 'Hide' to hide selected geometry.\n"
             "Enjoy exploring and learning about your building!"
         )
-        tabs.addTab(WelcomeTab(welcome_text), "Welcome")
+        welcome_tab = WelcomeTab(welcome_text, tab_widget=tabs)
+        tabs.addTab(welcome_tab, "Welcome")
+
+        # Add Survey tab second, pass tabs for navigation
+        survey_tab = SurveyTab(tab_widget=tabs)
+        tabs.addTab(survey_tab, "Survey")
 
         # Existing tabs
         tabs.addTab(ChatTab("http://localhost:5000/general_question"), "General")

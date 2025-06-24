@@ -29,6 +29,23 @@ def classify_knowledge_topic(user_message):
     }
     return topic_to_file.get(topic, "knowledge/outdoor comfort research issues.json")
 
+def extract_geometry_intent_from_sql(question):
+    """
+    Simple extraction of geometry intent from SQL-type questions.
+    Returns a dict with keys like 'level', 'entity_type', etc.
+    """
+    intent = {}
+    # Example: extract level number
+    level_match = re.search(r'level\s*(\d+)', question, re.IGNORECASE)
+    if level_match:
+        intent['level'] = int(level_match.group(1))
+    # Example: extract entity type (apartment, resident, etc.)
+    entity_types = ['apartment', 'resident', 'activity space', 'balcony', 'kitchen']
+    for entity in entity_types:
+        if entity in question.lower():
+            intent['entity_type'] = entity
+            break
+    return intent if intent else None
 
 def route_question(user_message):
     routing_prompt = f"""
