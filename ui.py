@@ -1,9 +1,9 @@
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QTabWidget, QVBoxLayout, QHBoxLayout,
-    QTextEdit, QTextBrowser, QLineEdit, QPushButton, QLabel, QCheckBox, QComboBox, QSizePolicy
+    QTextEdit, QTextBrowser, QLineEdit, QPushButton, QLabel, QCheckBox, QComboBox, QSizePolicy, QScrollArea, QGridLayout
 )
-from PyQt5.QtCore import QThread, pyqtSignal, Qt
-from PyQt5.QtGui import QPalette, QColor
+from PyQt5.QtCore import QThread, pyqtSignal, Qt, QFileSystemWatcher, QObject
+from PyQt5.QtGui import QPalette, QColor, QPixmap
 import sys
 from html import escape
 import re
@@ -30,6 +30,33 @@ def send_udp_command2(message, port=6001):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.sendto(message.encode("utf-8"), ("127.0.0.1", port))
 
+def send_udp_command3(message, port=6002):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.sendto(message.encode("utf-8"), ("127.0.0.1", port))
+
+class CsvWatcher(QObject):
+    def __init__(self, csv_path, callback):
+        super().__init__()
+        self.csv_path = csv_path
+        self.callback = callback
+        self.watcher = QFileSystemWatcher([csv_path])
+        self.watcher.fileChanged.connect(self.on_file_changed)
+        self.last_content = None
+        self.read_and_send()  # Optionally send on startup
+
+    def on_file_changed(self, path):
+        # QFileSystemWatcher sometimes emits multiple times, so debounce by content
+        self.read_and_send()
+
+    def read_and_send(self):
+        try:
+            with open(self.csv_path, "r", encoding="utf-8") as f:
+                content = f.read().strip()
+            if content and content != self.last_content:
+                self.last_content = content
+                self.callback(content)
+        except Exception as e:
+            print(f"Error reading CSV: {e}")
 
 class RequestWorker(QThread):
     finished = pyqtSignal(dict)
@@ -371,6 +398,8 @@ class ChatTab(QWidget):
         except Exception as e:
             self.chat_display.append(f"<b>Error:</b> {e}")
 
+    # ...existing code...
+
     def parse_and_trigger_geometry(self, user_text):
         """
         Detects geometry-related commands in user_text and triggers the appropriate geometry actions.
@@ -384,7 +413,7 @@ class ChatTab(QWidget):
             return True
 
         # Hide all geometry
-        if re.search(r"\b(hide|remove)\s+(all\s+)?(building|geometry|spaces?)\b", text):
+        if re.search(r"\b(hide|remove)\s+all(\s+(geometry|spaces?|apartments?))?\b", text):
             self.hide_all_geometry(force=True)
             return True
 
@@ -416,24 +445,32 @@ class ChatTab(QWidget):
             return True
 
         # Hide selected geometry
-        if re.search(r"\b(hide|remove)\s+(selected|current|this)\s+(geometry|space|apartment)\b", text):
+        if re.search(r"\b(hide|remove)\s+(current|this)\s+(geometry|space|apartment)\b", text):
             self.hide_specific_geometry()
             return True
 
-        # Patterns for level and info type
+        # Patterns for level and info type (improved)
         level_pattern = r"(?:level\s*|lvl\s*|floor\s*)?(\d+)"
-        info_pattern = r"(area|activity|wind|usability|comfort|temperature|occupancy|residents|spaces|apartments|building|all)"
-        # Try to match queries like "show/display/what are ... in/of/for level X"
+        info_pattern = r"(area|activity|wind|orientation|comfort|temperature|occupancy|residents|spaces|apartments|building|all)"
+
+        # Try to match both orders: "show level 3 wind" or "show wind level 3"
         match = re.search(
-            rf"(show|display|what are|what is|give me|can you show|visualize|see|plot|present)[^\n]*?(?:{info_pattern})?[^\n]*?(?:in|of|for)?[^\n]*?{level_pattern}",
+            rf"(?:show|display|what are|what is|give me|can you show|visualize|see|plot|present)[^\n]*?(?:{info_pattern})?[^\n]*?(?:in|of|for)?[^\n]*?{level_pattern}(?:[^\n]*?{info_pattern})?",
             user_text, re.IGNORECASE
         )
+
+        info = None
+        level = None
         if match:
-            info = match.group(2) or "all"
-            level = match.group(3)
-            # Trigger geometry display for the specified level and info type
-            self.trigger_geometry_display(level=level, info_type=info)
-            return True
+            # Find all occurrences of info_pattern and level_pattern
+            info_matches = re.findall(info_pattern, user_text, re.IGNORECASE)
+            level_matches = re.findall(level_pattern, user_text, re.IGNORECASE)
+            # Pick the first found, or default
+            info = info_matches[0] if info_matches else "all"
+            level = level_matches[0] if level_matches else None
+            if level:
+                self.trigger_geometry_display(level=level, info_type=info)
+                return True
 
         # Fallback: match "show all building" or "show all"
         if re.search(r"show all (building|apartments|spaces)?", user_text, re.IGNORECASE):
@@ -563,17 +600,15 @@ class MainWindow(QWidget):
         # Add Welcome tab first, pass tabs for navigation
         welcome_text = (
             "Welcome to Copilot for Residents!\n\n"
-            "This tool helps you explore, interact with, and ask questions about your building and its spaces.\n\n"
-            "• You can ask questions about general info, coliving, climate, and thermal comfort in the chat tabs.\n"
-            "• Use the General tab to show/hide all geometry or select specific levels and info.\n"
-            "• Use Space Q&A for space-related questions.\n"
-            "• Use Geometry/Negotiation for geometry suggestions.\n\n"
-            "Instructions:\n"
-            "1. Ask your questions in the chat box to get information about the building, coliving, or comfort.\n"
-            "2. Select options from the dropdowns and click 'Show' to display specific geometry.\n"
-            "3. Use 'Show All Building Geometry' to toggle all geometry on/off.\n"
-            "4. Use 'Hide' to hide selected geometry.\n"
-            "Enjoy exploring and learning about your building!"
+            "This tool helps you explore, interact with, and ask questions about your building, its spaces, and your neighbors. "
+            "Learn about coliving concepts, understand your climate conditions, negotiate activity changes in shared spaces, or even swap apartments. "
+            "Follow the steps below to build a happier, more connected community:\n\n"
+            "1. Fill out the survey to set up your profile.\n"
+            "2. Ask general questions, explore the building, and uncover hidden data about spaces and residents.\n"
+            "3. Get to know your closest neighbors and shared spaces — negotiate, book, or swap!\n"
+            "4. Suggest or make changes to the geometry of your building.\n"
+            "5. View rendered images of your building to see it from new perspectives.\n\n"
+            "Enjoy exploring and shaping your community!"
         )
         welcome_tab = WelcomeTab(welcome_text, tab_widget=tabs)
         tabs.addTab(welcome_tab, "Welcome")
@@ -590,9 +625,11 @@ class MainWindow(QWidget):
         self.qna_neg_tab = SpaceQnAUI()
         tabs.addTab(self.qna_neg_tab, "Q&A + Negotiate")
 
-        tabs.addTab(ChatTab("http://localhost:5002/geometry_suggestion"), "Geometry/Negotiation")
+        # tabs.addTab(ChatTab("http://localhost:5002/geometry_suggestion"), "Geometry/Negotiation")
         tabs.addTab(GeometryWorkflowTab("http://localhost:5004/initiate_gh_workflow"), "Geometry Workflow")
 
+        images_tab = ImagesTab(images_folder="images")
+        tabs.addTab(images_tab, "Images")
         layout.addWidget(tabs)
         self.setLayout(layout)
 
@@ -740,6 +777,43 @@ class GeometryWorkflowTab(QWidget):
         finally:
             self.send_btn.setEnabled(True)
 
+
+class ImagesTab(QWidget):
+    def __init__(self, images_folder="images"):
+        super().__init__()
+        layout = QVBoxLayout()
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        content = QWidget()
+        grid = QGridLayout()
+        content.setLayout(grid)
+        scroll.setWidget(content)
+        layout.addWidget(scroll)
+        self.setLayout(layout)
+
+        # Load images from the folder
+        import os
+        from glob import glob
+
+        # Accept common image extensions
+        image_files = []
+        for ext in ("*.png", "*.jpg", "*.jpeg", "*.bmp", "*.gif"):
+            image_files.extend(glob(os.path.join(images_folder, ext)))
+        image_files.sort()  # Sort for consistent order
+
+        # Display images in a grid (3 per row)
+        for idx, img_path in enumerate(image_files):
+            label = QLabel()
+            pixmap = QPixmap(img_path)
+            if not pixmap.isNull():
+                pixmap = pixmap.scaledToWidth(300, Qt.SmoothTransformation)
+                label.setPixmap(pixmap)
+                label.setAlignment(Qt.AlignCenter)
+                grid.addWidget(label, idx // 3, idx % 3)
+            else:
+                label.setText(f"Failed to load {os.path.basename(img_path)}")
+                grid.addWidget(label, idx // 3, idx % 3)
+
 # Global variable to hold the server process
 flask_server_process = None
 
@@ -867,6 +941,8 @@ if __name__ == "__main__":
             font-size: 15px;
         }
     """)
+    csv_path = os.path.join(os.path.dirname(__file__), "llm_reasoning", "llm_activity_assignments.csv")
+    watcher = CsvWatcher(csv_path, send_udp_command3)
 
     window.show()
     sys.exit(app.exec_())
