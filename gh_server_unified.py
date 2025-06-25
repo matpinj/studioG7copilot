@@ -60,6 +60,20 @@ def handle_general_question():
         user_message = data.get('question', '')
         conv_hist = data.get('conversation_history', [])
         answer = answer_general_question(user_message, conv_hist)
+
+        # --- User-friendly error handling ---
+        friendly_message = "I'm sorry but I was not able to find any relevant information to answer your question. Please, try again."
+        # You can add more patterns as needed
+        if (
+            not answer.strip() or
+            "no such table" in answer.lower() or
+            "error" in answer.lower() or
+            "exception" in answer.lower() or
+            "traceback" in answer.lower() or
+            "None" == answer.strip()
+        ):
+            answer = friendly_message
+
         conv_hist.append({"role": "user", "content": user_message})
         conv_hist.append({"role": "assistant", "content": answer})
         print("Returning response, elapsed:", time.time() - start, "seconds")

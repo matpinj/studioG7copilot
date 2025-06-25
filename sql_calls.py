@@ -62,18 +62,31 @@ def format_dB_context(ifc_sql_dB, filtered_dB_schema: str) -> str:
 # Run an SQL query against the database
 def execute_sql_query(dB_path, sql_query, params=None):
     # Connect to the SQLite database
+    print(f"[DEBUG] Connecting to database: {dB_path}")
+    print(f"[DEBUG] SQL Query: {sql_query}")
+    if params:
+        print(f"[DEBUG] Query Parameters: {params}")
+    else:
+        print("[DEBUG] No query parameters.")
+
     conn = sqlite3.connect(dB_path)
     cursor = conn.cursor()
 
-    # Execute the SQL query
-    if params:
-        cursor.execute(sql_query, params)
-    else:
-        cursor.execute(sql_query)
-    result = cursor.fetchall()
-    
-    # Close the connection
-    conn.close()
+    try:
+        # Execute the SQL query
+        if params:
+            cursor.execute(sql_query, params)
+        else:
+            cursor.execute(sql_query)
+        result = cursor.fetchall()
+        print(f"[DEBUG] Raw SQL Result: {result}")
+    except Exception as e:
+        print(f"[ERROR] Exception during SQL execution: {e}")
+        raise
+    finally:
+        # Close the connection
+        conn.close()
+        print("[DEBUG] Database connection closed.")
 
     return result
 
@@ -87,7 +100,8 @@ def fetch_sql(sql_query, dB_context, user_question, dB_path):
     while attempt <= max_retries:
         try:
             print("____________________")
-            print(f"Execute Attempt {attempt}/{max_retries}")
+            print(f"[DEBUG] Execute Attempt {attempt}/{max_retries}")
+            print(f"[DEBUG] Attempting SQL Query: {sql_query}")
             sql_result = execute_sql_query(dB_path, sql_query)
 
             # If query returns empty because of wrong property name
@@ -95,33 +109,41 @@ def fetch_sql(sql_query, dB_context, user_question, dB_path):
                 sql_exception = "The query returned empty. You should try either looking at a different table or at other properties in the same table."
                 atempted_queries.append(sql_query)
                 exceptions.append(sql_exception)
-            
+                print(f"[DEBUG] Query result: EMPTY. Attempted queries so far: {atempted_queries}")
+                print(f"[DEBUG] Exceptions so far: {exceptions}")
+
                 sql_query = fix_sql_query(dB_context, user_question, atempted_queries, exceptions)
-                #print(f"Attempt {attempt}/{max_retries}")
-                print(f"Query result: EMPTY. \nTrying a new query: \n {sql_query}")
+                print(f"[DEBUG] Trying a new query: \n{sql_query}")
                 attempt += 1
                 continue
-            
+
             # Exit if we got a result
             else:
-                print(f"This SQL query had a valid result!")
+                print(f"[DEBUG] This SQL query had a valid result!")
+                print(f"[DEBUG] Final SQL Query: {sql_query}")
+                print(f"[DEBUG] Final SQL Result: {sql_result}")
                 return sql_query, sql_result
-            
+
         # When the table name is wrong
         except Exception as sql_exception:
+            print(f"[ERROR] Exception during SQL execution: {sql_exception}")
             attempt += 1
             atempted_queries.append(sql_query)
-            exceptions.append(sql_exception)
+            exceptions.append(str(sql_exception))
+            print(f"[DEBUG] Attempted queries so far: {atempted_queries}")
+            print(f"[DEBUG] Exceptions so far: {exceptions}")
 
             sql_query = fix_sql_query(dB_context, user_question, atempted_queries, exceptions)
-            print(f"Query result: INVALID. \nTrying a new query: \n {sql_query}")
+            print(f"[DEBUG] Trying a new query: \n{sql_query}")
             continue
 
     # Exit if we didnt manage to get a result after max tries
     if attempt == max_retries:
+        print("[ERROR] Failed to generate a correct SQL query after multiple attempts.")
         sql_query = None
         sql_result = "Failed to generate a correct SQL query after multiple attempts..."
-        
+
+    print(f"[DEBUG] Returning after {max_retries} attempts. SQL Query: {sql_query}, SQL Result: {sql_result}")
     return sql_query, sql_result
 
 def get_space_details_as_string(db_path: str, space_id: str, table_name: str, id_column_name: str) -> str | None: # type: ignore

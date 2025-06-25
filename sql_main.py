@@ -4,6 +4,17 @@ from sql_calls import *
 from utils.rag_utils import sql_rag_call
 import re
 
+def clean_sql_query(query):
+    """
+    Remove markdown code block formatting and leading/trailing whitespace from SQL queries.
+    """
+    # Remove triple backticks and any language hints (e.g., ```sql)
+    query = re.sub(r"^```(?:sql)?\s*", "", query.strip(), flags=re.IGNORECASE)
+    query = re.sub(r"\s*```$", "", query.strip())
+    # Remove single backticks if present
+    query = query.strip('`')
+    return query.strip()
+
 def answer_sql_question(user_question):
 
     # --- Load SQL Database ---
@@ -70,6 +81,9 @@ def answer_sql_question(user_question):
     # --- Generate SQL query from LLM ---
     sql_query = generate_sql_query(db_context, table_description, user_question)
     print(f"SQL Query: \n {sql_query}")
+
+    # --- Clean SQL query to remove markdown/code block formatting ---
+    sql_query = clean_sql_query(sql_query)
 
     # --- LLM says insufficient info ---
     if "No information" in sql_query:
