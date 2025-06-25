@@ -600,17 +600,15 @@ class MainWindow(QWidget):
         # Add Welcome tab first, pass tabs for navigation
         welcome_text = (
             "Welcome to Copilot for Residents!\n\n"
-            "This tool helps you explore, interact with, and ask questions about your building and its spaces.\n\n"
-            "• You can ask questions about general info, coliving, climate, and thermal comfort in the chat tabs.\n"
-            "• Use the General tab to show/hide all geometry or select specific levels and info.\n"
-            "• Use Space Q&A for space-related questions.\n"
-            "• Use Geometry/Negotiation for geometry suggestions.\n\n"
-            "Instructions:\n"
-            "1. Ask your questions in the chat box to get information about the building, coliving, or comfort.\n"
-            "2. Select options from the dropdowns and click 'Show' to display specific geometry.\n"
-            "3. Use 'Show All Building Geometry' to toggle all geometry on/off.\n"
-            "4. Use 'Hide' to hide selected geometry.\n"
-            "Enjoy exploring and learning about your building!"
+            "This tool helps you explore, interact with, and ask questions about your building, its spaces, and your neighbors. "
+            "Learn about coliving concepts, understand your climate conditions, negotiate activity changes in shared spaces, or even swap apartments. "
+            "Follow the steps below to build a happier, more connected community:\n\n"
+            "1. Fill out the survey to set up your profile.\n"
+            "2. Ask general questions, explore the building, and uncover hidden data about spaces and residents.\n"
+            "3. Get to know your closest neighbors and shared spaces — negotiate, book, or swap!\n"
+            "4. Suggest or make changes to the geometry of your building.\n"
+            "5. View rendered images of your building to see it from new perspectives.\n\n"
+            "Enjoy exploring and shaping your community!"
         )
         welcome_tab = WelcomeTab(welcome_text, tab_widget=tabs)
         tabs.addTab(welcome_tab, "Welcome")
@@ -627,7 +625,7 @@ class MainWindow(QWidget):
         self.qna_neg_tab = SpaceQnAUI()
         tabs.addTab(self.qna_neg_tab, "Q&A + Negotiate")
 
-        tabs.addTab(ChatTab("http://localhost:5002/geometry_suggestion"), "Geometry/Negotiation")
+        # tabs.addTab(ChatTab("http://localhost:5002/geometry_suggestion"), "Geometry/Negotiation")
         tabs.addTab(GeometryWorkflowTab("http://localhost:5004/initiate_gh_workflow"), "Geometry Workflow")
 
         images_tab = ImagesTab(images_folder="images")
