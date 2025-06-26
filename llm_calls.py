@@ -183,7 +183,7 @@ def suggest_geometric_variations(
     # ...existing code...
     response = client.chat.completions.create(
     model=completion_model,
-    temperature=1.5,
+    temperature=0.5,
     top_p=0.9,
     messages=[
         # ───────────── SYSTEM ─────────────

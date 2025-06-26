@@ -213,7 +213,7 @@ def call_local_llm(prompt):
                 "temperature": 0.7,
                 "max_tokens": 300  # Limit tokens for faster response
             },
-            timeout=15  # Reduced timeout
+            timeout=120  # <-- Add timeout here
         )
         
         if response.status_code == 200:

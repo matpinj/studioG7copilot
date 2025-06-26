@@ -22,7 +22,42 @@ import socket
 #added for automated LLM reasoning activity assignments
 from llm_reasoning_test import generate_llm_assignments
 
-def send_udp_command(command: str, port: int = 6000, host: str = "127.0.0.1"):
+GEOMETRY_SERVER_URL = "http://127.0.0.1:5004"
+UNIFIED_SERVER_URL = "http://127.0.0.1:5000"
+
+
+# # To call geometry server (port 5004)
+# result = call_geometry_server("initiate_gh_workflow", {"space_id": "O2", "resident_key": "H23"})
+
+# # To call unified server (port 5000)
+# result = call_unified_server("llm_nearby_space_qna", {"question": "Who else benefits?"})
+
+# # To let the helper decide (based on endpoint name)
+# result = post_to_backend("llm_nearby_space_qna", {"question": "Who else benefits?"})
+# result = post_to_backend("initiate_gh_workflow", {"space_id": "O2", "resident_key": "H23"})
+
+def call_geometry_server(endpoint, payload):
+    url = f"{GEOMETRY_SERVER_URL}/{endpoint.lstrip('/')}"
+    response = requests.post(url, json=payload)
+    return response.json()
+
+def call_unified_server(endpoint, payload):
+    url = f"{UNIFIED_SERVER_URL}/{endpoint.lstrip('/')}"
+    response = requests.post(url, json=payload)
+    return response.json()
+
+def post_to_backend(endpoint, payload):
+    if endpoint in ["llm_nearby_space_qna", "another_unified_endpoint"]:
+        url = f"{UNIFIED_SERVER_URL}/{endpoint.lstrip('/')}"
+    else:
+        url = f"{GEOMETRY_SERVER_URL}/{endpoint.lstrip('/')}"
+    response = requests.post(url, json=payload)
+    return response.json()
+
+
+
+def send_udp_command(command: str, port: int = 5004, host: str = "127.0.0.1"):
+    print("Sending UDP command...")
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.sendto(command.encode("utf-8"), (host, port))
 
@@ -572,6 +607,50 @@ class SurveyTab(QWidget):
             # Assuming General tab is at index 2 (after Welcome and Survey)
             self.tab_widget.setCurrentIndex(2)
 
+
+flask_server_process_geometry = None
+flask_server_process_unified = None
+
+def _get_server_script_path_geometry():
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(current_dir, "geometry_mod", "gh_server_geometry.py")
+
+def _get_server_script_path_unified():
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(current_dir, "gh_server_unified.py")
+
+def start_flask_servers():
+    global flask_server_process_geometry, flask_server_process_unified
+    geometry_script = _get_server_script_path_geometry()
+    unified_script = _get_server_script_path_unified()
+    if os.path.exists(geometry_script):
+        flask_server_process_geometry = subprocess.Popen([sys.executable, geometry_script])
+        print(f"Started geometry server: {geometry_script} (PID: {flask_server_process_geometry.pid})")
+    else:
+        print(f"Geometry server script not found at {geometry_script}")
+    if os.path.exists(unified_script):
+        flask_server_process_unified = subprocess.Popen([sys.executable, unified_script])
+        print(f"Started unified server: {unified_script} (PID: {flask_server_process_unified.pid})")
+    else:
+        print(f"Unified server script not found at {unified_script}")
+
+def stop_flask_servers():
+    global flask_server_process_geometry, flask_server_process_unified
+    for proc in [flask_server_process_geometry, flask_server_process_unified]:
+        if proc:
+            print(f"Stopping Flask server with PID: {proc.pid}...")
+            proc.terminate()
+            proc.wait(timeout=60)
+            if proc.poll() is None:
+                print("Server did not terminate gracefully, killing...")
+                proc.kill()
+            print("Flask server stopped.")
+
+# Start both servers when the UI launches
+start_flask_servers()
+atexit.register(stop_flask_servers)
+
+
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
@@ -583,7 +662,7 @@ class MainWindow(QWidget):
         #for gh_server_geometry
 
         layout = QVBoxLayout()
-        tabs = QTabWidget()
+        self.tabs = QTabWidget()
 
         # Add Welcome tab first, pass tabs for navigation
         welcome_text = (
@@ -598,29 +677,51 @@ class MainWindow(QWidget):
             "5. View rendered images of your building to see it from new perspectives.\n\n"
             "Enjoy exploring and shaping your community!"
         )
-        welcome_tab = WelcomeTab(welcome_text, tab_widget=tabs)
-        tabs.addTab(welcome_tab, "Welcome")
+        welcome_tab = WelcomeTab(welcome_text, tab_widget=self.tabs)
+        self.tabs.addTab(welcome_tab, "Welcome")
 
         # Add Survey tab second, pass tabs for navigation
-        survey_tab = SurveyTab(tab_widget=tabs)
-        tabs.addTab(survey_tab, "Survey")
+        survey_tab = SurveyTab(tab_widget=self.tabs)
+        self.tabs.addTab(survey_tab, "Survey")
 
         # Existing tabs
-        tabs.addTab(ChatTab("http://localhost:5000/general_question"), "General")
+        self.tabs.addTab(ChatTab("http://localhost:5000/general_question"), "General")
 
         # Add Q&A + Negotiate Tab from ui_pyqt_spaceqna.py
         from ui_pyqt_spaceqna import SpaceQnAUI
         self.qna_neg_tab = SpaceQnAUI()
-        tabs.addTab(self.qna_neg_tab, "Q&A + Negotiate")
+        self.tabs.addTab(self.qna_neg_tab, "Q&A + Negotiate")
 
-        # tabs.addTab(ChatTab("http://localhost:5002/geometry_suggestion"), "Geometry/Negotiation")
-        tabs.addTab(GeometryWorkflowTab("http://localhost:5004/initiate_gh_workflow"), "Geometry Workflow")
+        self.geometry_workflow_tab = GeometryWorkflowTab("http://localhost:5004/initiate_gh_workflow")
+        self.tabs.addTab(self.geometry_workflow_tab, "Geometry Workflow")
 
+        self.qna_neg_tab.closestOutdoorFound.connect(self.geometry_workflow_tab.space_id_input.setText)
+
+        # Connect signals for data transfer between tabs
+        # When the Q&A tab's house_key_input changes, update the Geometry tab's resident_key_input
+        self.qna_neg_tab.house_key_input.textChanged.connect(self._updateGeometryResidentKey)
+        
+        # When switching tabs, if the Geometry Workflow tab is selected, update its resident key
+        self.tabs.currentChanged.connect(self._onTabChanged)
+
+        
+
+      
         images_tab = ImagesTab(images_folder="images")
-        tabs.addTab(images_tab, "Images")
-        layout.addWidget(tabs)
+        self.tabs.addTab(images_tab, "Images")
+        layout.addWidget(self.tabs)
         self.setLayout(layout)
 
+    def _updateGeometryResidentKey(self, key):
+        self.geometry_workflow_tab.resident_key_input.setText(key)
+
+    def _onTabChanged(self, index):
+        # Check if the newly selected tab is the Geometry Workflow tab
+        if self.tabs.widget(index) is self.geometry_workflow_tab:
+            house_key = self.qna_neg_tab.house_key_input.text()
+            self.geometry_workflow_tab.resident_key_input.setText(house_key)
+
+        
     #for gh_server_geometry
     def start_flask_server_if_needed(self):
         global flask_server_process
@@ -646,6 +747,13 @@ class GeometryWorkflowTab(QWidget):
         self.endpoint = endpoint
 
         layout = QVBoxLayout()
+
+        # --- Add this banner at the top ---
+        banner = QLabel("⏳ Geometry jobs might take a couple of minutes. Why not grab a coffee while you wait?")
+        banner.setStyleSheet("background: #fffbe6; color: #b8860b; border-radius: 8px; padding: 10px; font-size: 15px; font-weight: bold;")
+        banner.setAlignment(Qt.AlignCenter)
+        layout.addWidget(banner)
+        # --- End banner ---
 
         # Input fields
         self.space_id_input = QLineEdit()
@@ -804,6 +912,9 @@ class ImagesTab(QWidget):
 
 # Global variable to hold the server process
 flask_server_process = None
+
+
+
 
 #for gh_server_geometry
 #region
