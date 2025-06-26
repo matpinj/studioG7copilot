@@ -341,14 +341,5 @@
       "activity": "Viewpoint"
     },
     "reasoning": "Based on the threshold-based prediction and green prediction, I chose Viewpoint as it is suitable for this balcony space. The usability prediction of warm_sunny also fits well with a viewpoint activity. Additionally, considering the nearby residents' preferences, I found that young professionals (H81) have a strong preference for Outdoor Cinema/Event Space, which could be an event or gathering at this viewpoint."
-  },
-  {
-    "parameters": {
-      "id": "O16",
-      "activity": "Viewpoint",
-      "activity_1": "Sports"
-    },
-    "reasoning": "Analysis for changing O16 from Sports to Viewpoint:\nResidents who voted for Sports: ['H22', 'H8', 'H18', 'H35', 'H40', 'H9', 'H36', 'H37', 'H17', 'H11', 'H16', 'H38', 'H2', 'H7', 'H13']\nResidents who voted for Viewpoint: ['H10', 'H12', 'H34', 'H23', 'H4', 'H6', 'H27', 'H39', 'H14', 'H19', 'H24', 'H11', 'H31', 'H5', 'H37', 'H15', 'H43', 'H41', 'H30', 'H42', 'H28', 'H32', 'H3', 'H2', 'H1', 'H25', 'H44', 'H20', 'H9', 'H17', 'H29', 'H33', 'H13']\nOverlap (residents who like both): ['H9', 'H37', 'H17', 'H11', 'H2', 'H13']\n\nActivity change is possible due to resident overlap.\n\nWarning: Viewpoint is not in predicted activities for O16.\nCurrent predicted activities: offline retreat,  sunbath,  healing garden,  sports,  outdoor cinema/event space,  flexible space,  outdoor meeting space\n\nGeometry changes needed for Viewpoint:\n- open_sides: increase to at least 2 (current: 1)\n- level: increase to at least 2 (current: 1)\n- sun_hours: change to 2 (current: 5.54)\n",
-    "reasoning_1": "H10 requested the change. Previously assigned as Sports."
   }
 ]

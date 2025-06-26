@@ -561,7 +561,7 @@ def check_geometry_requirements(space_id, desired_activity, geometries=None, ml_
     }
 
 def propose_activity_change(params):
-    """Enhanced activity change proposal with caching"""
+    """Enhanced activity change proposal with conversational LLM analysis"""
     user_id = params.get("user_id")
     space_id = params.get("space_id")
     desired = params.get("desired_activity")
@@ -588,75 +588,78 @@ def propose_activity_change(params):
     thresh = get_negotiation_data('thresh')
     ml_activity_logic = get_negotiation_data('ml_activity_logic')
     
-    print(f"[DEBUG] Analyzing activity change: {current_clean} -> {desired_clean} for {space_id}")
-    
     # Analyze voting efficiently
     current_voters = voting[(voting["space"] == space_id) & (voting["activity"].str.strip().str.title() == current_clean)]
     desired_voters = voting[(voting["space"] == space_id) & (voting["activity"].str.strip().str.title() == desired_clean)]
-    
-    
     current_residents = set(current_voters["resident"])
     desired_residents = set(desired_voters["resident"])
     overlap = current_residents & desired_residents
-    
-    explanation = f"Analysis for changing {space_id} from {current_clean} to {desired_clean}:\n"
-    explanation += f"Residents who voted for {current_clean}: {list(current_residents)}\n"
-    explanation += f"Residents who voted for {desired_clean}: {list(desired_residents)}\n"
-    explanation += f"Overlap (residents who like both): {list(overlap)}\n"
-    
-    # Case 1: No overlap - find convinceable voters
-    if not overlap:
-        convinceable = analyze_convinceable_voters(space_id, current_clean, desired_clean, voting)
-        if convinceable:
-            explanation += f"\nNo direct overlap found, but these residents might be convinced:\n"
-            for conv in convinceable[:3]:  # Limit to top 3 for brevity
-                explanation += f"- {conv['resident']}: {conv['reason']}\n"
-            can_proceed = True
-        else:
-            explanation += f"\nNo overlap and no convinceable residents found. Change may be difficult.\n"
-            can_proceed = False
-    else:
-        explanation += f"\nActivity change is possible due to resident overlap.\n"
-        can_proceed = True
-    
-    # Check if desired activity is in thresh (activity column)
+
+    # Geometry checks
     space_thresh = thresh[thresh["id"] == space_id]
+    geometry_warning = ""
+    geometry_changes = {}
+    current_geometry = {}
     if not space_thresh.empty:
         current_activities = str(space_thresh.iloc[0]["predicted_activities"]).lower()
         if desired_clean.lower() not in current_activities:
-            explanation += f"\nWarning: {desired_clean} is not in predicted activities for {space_id}.\n"
-            explanation += f"Current predicted activities: {current_activities}\n"
-            
-            # Check geometry requirements
+            geometry_warning = f"Warning: {desired_clean} is not in predicted activities for {space_id}. Current predicted activities: {current_activities}."
             geom_check = check_geometry_requirements(space_id, desired_clean, geometries, ml_activity_logic)
             if "error" not in geom_check and geom_check["changes_needed"]:
-                explanation += f"\nGeometry changes needed for {desired_clean}:\n"
-                for change_type, change_desc in geom_check["changes_needed"].items():
-                    explanation += f"- {change_type}: {change_desc}\n"
-                
-                return {
-                    "result": explanation,
-                    "can_proceed": can_proceed,
-                    "geometry_changes_needed": True,
-                    "geometry_changes": geom_check["changes_needed"],
-                    "current_geometry": geom_check["current_geometry"],
-                    "space_id": space_id,
-                    "desired_activity": desired_clean,
-                    "params": params
-                }
+                geometry_changes = geom_check["changes_needed"]
+                current_geometry = geom_check["current_geometry"]
             elif "error" in geom_check:
-                explanation += f"\nCould not check geometry requirements: {geom_check['error']}\n"
-    
-    # Add geometry info using cached lookup
-    space_geom = get_space_geometry(space_id)
-    if space_geom is not None:
-        area = space_geom["area"]
-        explanation += f"\nCurrent geometry - Area: {area}m²\n"
-    
+                geometry_warning += f" Could not check geometry requirements: {geom_check['error']}"
+
+    # Compose LLM prompt
+    prompt = f"""
+A resident has made a negotiation request.
+
+User request: Change {space_id} from {current_clean} to {desired_clean}.
+
+Residents who voted for {current_clean} in {space_id}: {list(current_residents)}
+Residents who voted for {desired_clean} in {space_id}: {list(desired_residents)}
+Overlap (residents who like both): {list(overlap)}
+
+{geometry_warning}
+Geometry changes needed: {geometry_changes if geometry_changes else 'None'}
+Current geometry: {current_geometry if current_geometry else 'N/A'}
+
+Please analyze the situation, explain if and why the change is possible, what negotiations or agreements might be needed, and summarize the next steps in a friendly, conversational way. If there are any concerns or recommendations, mention them.
+"""
+
+    messages = [
+        {"role": "system", "content": "You are a helpful, friendly community assistant who helps residents negotiate space usage and activities in their building. Use the facts provided and do not make up numbers."},
+        {"role": "user", "content": prompt}
+    ]
+
+    try:
+        response = requests.post(
+            "http://localhost:1234/v1/chat/completions",
+            headers={"Content-Type": "application/json"},
+            json={
+                "model": "local-model",
+                "messages": messages,
+                "temperature": 0.7,
+                "max_tokens": 400
+            },
+            timeout=15
+        )
+        if response.status_code == 200:
+            llm_reply = response.json()["choices"][0]["message"]["content"]
+        else:
+            llm_reply = "Sorry, I couldn't generate a conversational analysis at this time."
+    except Exception as e:
+        llm_reply = f"Sorry, there was an error generating the analysis: {e}"
+
     return {
-        "result": explanation,
-        "can_proceed": can_proceed,
-        "geometry_changes_needed": False,
+        "result": llm_reply,
+        "can_proceed": bool(overlap or geometry_changes),
+        "geometry_changes_needed": bool(geometry_changes),
+        "geometry_changes": geometry_changes,
+        "current_geometry": current_geometry,
+        "space_id": space_id,
+        "desired_activity": desired_clean,
         "params": params
     }
 
@@ -933,7 +936,7 @@ def handle_apartment_swap(params):
         
         result = f"Smart apartment swaps found for {desired_activity}:\n\n"
         
-        for i, candidate in enumerate(swap_candidates[:5], 1):  # Top 5
+        for i, candidate in enumerate(swap_candidates[:5], 1): # Top 5
             result += f"**Option {i}: Swap with {candidate['target_resident']}**\n"
             result += f"✓ You get: Access to {candidate['target_space']} ({desired_activity}) - {candidate['distance_to_desired']:.1f}m away\n"
             result += f"✓ They get: Access to {candidate['your_space']} ({candidate['your_activity']}) - {candidate['distance_to_your_space']:.1f}m away\n"
