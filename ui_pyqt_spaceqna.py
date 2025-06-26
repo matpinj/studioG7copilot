@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import (
     QLabel, QLineEdit, QPushButton, QTextBrowser,
     QHBoxLayout, QComboBox, QFrame, QTextEdit, QTabWidget
 )
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import (Qt,pyqtSignal)
 import socket
 import re
 
@@ -22,7 +22,38 @@ def extract_space_keys(text):
     return set(re.findall(r'\b[HO]\d+\b', text))
 
 
+import pandas as pd
+
+def get_closest_outdoor_space(resident_key, detected_keys):
+    outdoor_keys = [k for k in detected_keys if k.startswith('O')]
+    if not outdoor_keys:
+        return None, None
+
+    df = pd.read_csv("resident_data/resident_distances_all.csv")
+    df['Source Node'] = df['Source Node'].astype(str).str.strip()
+    resident_key = str(resident_key).strip()
+
+    min_dist = float('inf')
+    closest_space = None
+
+    for okey in outdoor_keys:
+        row = df[df['Source Node'] == okey]
+        if not row.empty and resident_key in row.columns:
+            try:
+                dist = float(row.iloc[0][resident_key])
+                if dist < min_dist:
+                    min_dist = dist
+                    closest_space = okey
+            except Exception:
+                continue
+
+    if closest_space is not None:
+        return closest_space, min_dist
+    else:
+        return None, None
+
 class SpaceQnAUI(QMainWindow):
+    closestOutdoorFound = pyqtSignal(str)  # Add this line
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Nearby Space QnA (LLM)")
@@ -167,6 +198,14 @@ class SpaceQnAUI(QMainWindow):
                 keys_str = self.update_detected_keys(question, answer)
                 send_udp_command_1(keys_str, port=7000)
                 self.qna_display.append(f"<b>Detected keys:</b> {keys_str}")
+                detected_keys = list(self.current_detected_keys) if hasattr(self, "current_detected_keys") else []
+                house_key = self.house_key_input.text().strip()
+                closest_space, distance = get_closest_outdoor_space(house_key, detected_keys)
+                if closest_space:
+                    self.qna_display.append(f"<b>Closest detected outdoor space:</b> {closest_space} ({distance:.1f}m away)")
+                    self.closestOutdoorFound.emit(closest_space)
+                else:
+                    self.qna_display.append("<b>No detected outdoor spaces found in your keys.</b>")
             else:
                 self.qna_display.append(
                     f"<span style='color: red;'>Server error: {resp.status_code}</span>"

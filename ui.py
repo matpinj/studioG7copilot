@@ -674,7 +674,7 @@ class MainWindow(QWidget):
         #for gh_server_geometry
 
         layout = QVBoxLayout()
-        tabs = QTabWidget()
+        self.tabs = QTabWidget()
 
         # Add Welcome tab first, pass tabs for navigation
         welcome_text = (
@@ -689,29 +689,51 @@ class MainWindow(QWidget):
             "5. View rendered images of your building to see it from new perspectives.\n\n"
             "Enjoy exploring and shaping your community!"
         )
-        welcome_tab = WelcomeTab(welcome_text, tab_widget=tabs)
-        tabs.addTab(welcome_tab, "Welcome")
+        welcome_tab = WelcomeTab(welcome_text, tab_widget=self.tabs)
+        self.tabs.addTab(welcome_tab, "Welcome")
 
         # Add Survey tab second, pass tabs for navigation
-        survey_tab = SurveyTab(tab_widget=tabs)
-        tabs.addTab(survey_tab, "Survey")
+        survey_tab = SurveyTab(tab_widget=self.tabs)
+        self.tabs.addTab(survey_tab, "Survey")
 
         # Existing tabs
-        tabs.addTab(ChatTab("http://localhost:5000/general_question"), "General")
+        self.tabs.addTab(ChatTab("http://localhost:5000/general_question"), "General")
 
         # Add Q&A + Negotiate Tab from ui_pyqt_spaceqna.py
         from ui_pyqt_spaceqna import SpaceQnAUI
         self.qna_neg_tab = SpaceQnAUI()
-        tabs.addTab(self.qna_neg_tab, "Q&A + Negotiate")
+        self.tabs.addTab(self.qna_neg_tab, "Q&A + Negotiate")
 
-        # tabs.addTab(ChatTab("http://localhost:5002/geometry_suggestion"), "Geometry/Negotiation")
-        tabs.addTab(GeometryWorkflowTab("http://localhost:5004/initiate_gh_workflow"), "Geometry Workflow")
+        self.geometry_workflow_tab = GeometryWorkflowTab("http://localhost:5004/initiate_gh_workflow")
+        self.tabs.addTab(self.geometry_workflow_tab, "Geometry Workflow")
 
+        self.qna_neg_tab.closestOutdoorFound.connect(self.geometry_workflow_tab.space_id_input.setText)
+
+        # Connect signals for data transfer between tabs
+        # When the Q&A tab's house_key_input changes, update the Geometry tab's resident_key_input
+        self.qna_neg_tab.house_key_input.textChanged.connect(self._updateGeometryResidentKey)
+        
+        # When switching tabs, if the Geometry Workflow tab is selected, update its resident key
+        self.tabs.currentChanged.connect(self._onTabChanged)
+
+        
+
+      
         images_tab = ImagesTab(images_folder="images")
-        tabs.addTab(images_tab, "Images")
-        layout.addWidget(tabs)
+        self.tabs.addTab(images_tab, "Images")
+        layout.addWidget(self.tabs)
         self.setLayout(layout)
 
+    def _updateGeometryResidentKey(self, key):
+        self.geometry_workflow_tab.resident_key_input.setText(key)
+
+    def _onTabChanged(self, index):
+        # Check if the newly selected tab is the Geometry Workflow tab
+        if self.tabs.widget(index) is self.geometry_workflow_tab:
+            house_key = self.qna_neg_tab.house_key_input.text()
+            self.geometry_workflow_tab.resident_key_input.setText(house_key)
+
+        
     #for gh_server_geometry
     def start_flask_server_if_needed(self):
         global flask_server_process
@@ -737,6 +759,13 @@ class GeometryWorkflowTab(QWidget):
         self.endpoint = endpoint
 
         layout = QVBoxLayout()
+
+        # --- Add this banner at the top ---
+        banner = QLabel("⏳ Geometry jobs might take a couple of minutes. Why not grab a coffee while you wait?")
+        banner.setStyleSheet("background: #fffbe6; color: #b8860b; border-radius: 8px; padding: 10px; font-size: 15px; font-weight: bold;")
+        banner.setAlignment(Qt.AlignCenter)
+        layout.addWidget(banner)
+        # --- End banner ---
 
         # Input fields
         self.space_id_input = QLineEdit()
