@@ -22,8 +22,7 @@ import socket
 #added for automated LLM reasoning activity assignments
 from llm_reasoning_test import generate_llm_assignments
 
-def send_udp_command(command: str, port: int = 5004, host: str = "127.0.0.1"):
-    print("Sending UDP command...")
+def send_udp_command(command: str, port: int = 6000, host: str = "127.0.0.1"):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.sendto(command.encode("utf-8"), (host, port))
 
@@ -399,8 +398,6 @@ class ChatTab(QWidget):
         except Exception as e:
             self.chat_display.append(f"<b>Error:</b> {e}")
 
-    # ...existing code...
-
     def parse_and_trigger_geometry(self, user_text):
         """
         Detects geometry-related commands in user_text and triggers the appropriate geometry actions.
@@ -418,67 +415,57 @@ class ChatTab(QWidget):
             self.hide_all_geometry(force=True)
             return True
 
-        # Show specific level (e.g., "show level 1", "display level 2 apartments")
-        match = re.search(r"\b(show|display|reveal)\s+level\s+(\d+)", text)
-        if match:
-            level = int(match.group(2))
-            # Set dropdown if available
-            if hasattr(self, "level_dropdown"):
-                idx = self.level_dropdown.findText(str(level))
-                if idx != -1:
-                    self.level_dropdown.setCurrentIndex(idx)
-            # Optionally parse for apartment/space info
-            if "apartment" in text or "resident" in text:
-                if hasattr(self, "apt_info_dropdown"):
-                    idx = self.apt_info_dropdown.findText("Residents")
-                    if idx != -1:
-                        self.apt_info_dropdown.setCurrentIndex(idx)
-            self.send_geometry_command()
-            return True
-
-        # Show specific apartment (e.g., "show apartment key", "show residents")
-        if re.search(r"\b(show|display|reveal)\s+(apartment|resident|key|residents)\b", text):
-            if hasattr(self, "apt_info_dropdown"):
-                idx = self.apt_info_dropdown.findText("Residents")
-                if idx != -1:
-                    self.apt_info_dropdown.setCurrentIndex(idx)
-            self.send_geometry_command()
-            return True
-
         # Hide selected geometry
         if re.search(r"\b(hide|remove)\s+(current|this)\s+(geometry|space|apartment)\b", text):
             self.hide_specific_geometry()
             return True
 
-        # Patterns for level and info type (improved)
-        level_pattern = r"(?:level\s*|lvl\s*|floor\s*)?(\d+)"
-        info_pattern = r"(area|activity|wind|orientation|comfort|temperature|occupancy|residents|spaces|apartments|building|all)"
+        # --- Unified robust pattern for level and info type ---
+        # Accepts: "show utci on level 1", "show level 2 wind", "display residents for level 3", etc.
+        level_pattern = r"(?:level|lvl|floor)\s*(\d+)"
+        info_pattern = r"(activity|area|utci|wind|orientation|comfort|temperature|occupancy|residents|spaces|apartments|key|building|all)"
+        # Find all info types and levels in the text
+        info_matches = re.findall(info_pattern, text, re.IGNORECASE)
+        level_matches = re.findall(level_pattern, text, re.IGNORECASE)
 
-        # Try to match both orders: "show level 3 wind" or "show wind level 3"
-        match = re.search(
-            rf"(?:show|display|what are|what is|give me|can you show|visualize|see|plot|present)[^\n]*?(?:{info_pattern})?[^\n]*?(?:in|of|for)?[^\n]*?{level_pattern}(?:[^\n]*?{info_pattern})?",
-            user_text, re.IGNORECASE
-        )
+        # Try to extract dropdown values
+        level = level_matches[0] if level_matches else None
+        info = info_matches[0] if info_matches else None
 
-        info = None
-        level = None
-        if match:
-            # Find all occurrences of info_pattern and level_pattern
-            info_matches = re.findall(info_pattern, user_text, re.IGNORECASE)
-            level_matches = re.findall(level_pattern, user_text, re.IGNORECASE)
-            # Pick the first found, or default
-            info = info_matches[0] if info_matches else "all"
-            level = level_matches[0] if level_matches else None
-            if level:
-                self.trigger_geometry_display(level=level, info_type=info)
-                return True
+        # Only trigger if BOTH level and info/apt are present
+        if level and info:
+            # Map info keywords to dropdown values
+            space_info_options = [self.space_info_dropdown.itemText(i).lower() for i in range(self.space_info_dropdown.count())] if hasattr(self, "space_info_dropdown") else []
+            apt_info_options = [self.apt_info_dropdown.itemText(i).lower() for i in range(self.apt_info_dropdown.count())] if hasattr(self, "apt_info_dropdown") else []
 
-        # Fallback: match "show all building" or "show all"
-        if re.search(r"show all (building|apartments|spaces)?", user_text, re.IGNORECASE):
-            self.trigger_geometry_display(level="all", info_type="all")
+            # Decide which dropdown to set
+            info_type = None
+            apt_type = None
+            if info:
+                if info.lower() in space_info_options:
+                    info_type = info.capitalize()
+                elif info.lower() in apt_info_options:
+                    apt_type = info.capitalize()
+            # Set dropdowns
+            if level and hasattr(self, "level_dropdown"):
+                idx = self.level_dropdown.findText(str(int(level)))
+                if idx != -1:
+                    self.level_dropdown.setCurrentIndex(idx)
+            if info_type and hasattr(self, "space_info_dropdown"):
+                idx = self.space_info_dropdown.findText(info_type)
+                if idx != -1:
+                    self.space_info_dropdown.setCurrentIndex(idx)
+            if apt_type and hasattr(self, "apt_info_dropdown"):
+                idx = self.apt_info_dropdown.findText(apt_type)
+                if idx != -1:
+                    self.apt_info_dropdown.setCurrentIndex(idx)
+            self.send_geometry_command()
             return True
 
-        # Add more patterns as needed...
+        # Fallback: match "show all building" or "show all"
+        if re.search(r"show all (building|apartments|spaces)?", text, re.IGNORECASE):
+            self.trigger_geometry_display(level="all", info_type="all")
+            return True
 
         return False
 
