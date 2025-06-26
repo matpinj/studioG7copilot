@@ -22,6 +22,40 @@ import socket
 #added for automated LLM reasoning activity assignments
 from llm_reasoning_test import generate_llm_assignments
 
+GEOMETRY_SERVER_URL = "http://127.0.0.1:5004"
+UNIFIED_SERVER_URL = "http://127.0.0.1:5000"
+
+
+# # To call geometry server (port 5004)
+# result = call_geometry_server("initiate_gh_workflow", {"space_id": "O2", "resident_key": "H23"})
+
+# # To call unified server (port 5000)
+# result = call_unified_server("llm_nearby_space_qna", {"question": "Who else benefits?"})
+
+# # To let the helper decide (based on endpoint name)
+# result = post_to_backend("llm_nearby_space_qna", {"question": "Who else benefits?"})
+# result = post_to_backend("initiate_gh_workflow", {"space_id": "O2", "resident_key": "H23"})
+
+def call_geometry_server(endpoint, payload):
+    url = f"{GEOMETRY_SERVER_URL}/{endpoint.lstrip('/')}"
+    response = requests.post(url, json=payload)
+    return response.json()
+
+def call_unified_server(endpoint, payload):
+    url = f"{UNIFIED_SERVER_URL}/{endpoint.lstrip('/')}"
+    response = requests.post(url, json=payload)
+    return response.json()
+
+def post_to_backend(endpoint, payload):
+    if endpoint in ["llm_nearby_space_qna", "another_unified_endpoint"]:
+        url = f"{UNIFIED_SERVER_URL}/{endpoint.lstrip('/')}"
+    else:
+        url = f"{GEOMETRY_SERVER_URL}/{endpoint.lstrip('/')}"
+    response = requests.post(url, json=payload)
+    return response.json()
+
+
+
 def send_udp_command(command: str, port: int = 5004, host: str = "127.0.0.1"):
     print("Sending UDP command...")
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -585,6 +619,50 @@ class SurveyTab(QWidget):
             # Assuming General tab is at index 2 (after Welcome and Survey)
             self.tab_widget.setCurrentIndex(2)
 
+
+flask_server_process_geometry = None
+flask_server_process_unified = None
+
+def _get_server_script_path_geometry():
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(current_dir, "geometry_mod", "gh_server_geometry.py")
+
+def _get_server_script_path_unified():
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(current_dir, "gh_server_unified.py")
+
+def start_flask_servers():
+    global flask_server_process_geometry, flask_server_process_unified
+    geometry_script = _get_server_script_path_geometry()
+    unified_script = _get_server_script_path_unified()
+    if os.path.exists(geometry_script):
+        flask_server_process_geometry = subprocess.Popen([sys.executable, geometry_script])
+        print(f"Started geometry server: {geometry_script} (PID: {flask_server_process_geometry.pid})")
+    else:
+        print(f"Geometry server script not found at {geometry_script}")
+    if os.path.exists(unified_script):
+        flask_server_process_unified = subprocess.Popen([sys.executable, unified_script])
+        print(f"Started unified server: {unified_script} (PID: {flask_server_process_unified.pid})")
+    else:
+        print(f"Unified server script not found at {unified_script}")
+
+def stop_flask_servers():
+    global flask_server_process_geometry, flask_server_process_unified
+    for proc in [flask_server_process_geometry, flask_server_process_unified]:
+        if proc:
+            print(f"Stopping Flask server with PID: {proc.pid}...")
+            proc.terminate()
+            proc.wait(timeout=60)
+            if proc.poll() is None:
+                print("Server did not terminate gracefully, killing...")
+                proc.kill()
+            print("Flask server stopped.")
+
+# Start both servers when the UI launches
+start_flask_servers()
+atexit.register(stop_flask_servers)
+
+
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
@@ -817,6 +895,9 @@ class ImagesTab(QWidget):
 
 # Global variable to hold the server process
 flask_server_process = None
+
+
+
 
 #for gh_server_geometry
 #region

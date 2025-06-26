@@ -144,7 +144,7 @@ def call_local_llm(prompt):
                 ],
                 "temperature": 0.7
             },
-            timeout=30  # <-- Add timeout here
+            timeout=120  # <-- Add timeout here
         )
         return response.json()["choices"][0]["message"]["content"]
     except requests.exceptions.Timeout:

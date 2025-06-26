@@ -154,7 +154,7 @@ class SpaceQnAUI(QMainWindow):
             resp = requests.post(
                 "http://127.0.0.1:5000/llm_nearby_space_qna",
                 json={"house_key": house_key, "question": question},
-                timeout=30
+                timeout=200
             )
             if resp.status_code == 200:
                 answer = resp.json().get("response", "<No response>")
