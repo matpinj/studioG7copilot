@@ -29,11 +29,15 @@ resident_map = {
 results = []
 for _, row in distances.iterrows():
     space_id = row["Outdoor Space"]
-    for resident_key in row.index[1:]:
-        if pd.isna(row[resident_key]) or resident_key not in resident_map:
-            continue
-
-        distance = float(row[resident_key])
+    # Get distances for all residents for this space
+    resident_distances = [
+        (resident_key, row[resident_key])
+        for resident_key in row.index[1:]
+        if pd.notna(row[resident_key]) and resident_key in resident_map
+    ]
+    # Sort by distance and take the closest 5
+    closest_residents = sorted(resident_distances, key=lambda x: x[1])[:5]
+    for resident_key, distance in closest_residents:
         resident_data = resident_map[resident_key]
         population = resident_data["population"]
         persona = resident_data["persona"]
