@@ -598,67 +598,57 @@ class ChatTab(QWidget):
             self.hide_all_geometry(force=True)
             return True
 
-        # Show specific level (e.g., "show level 1", "display level 2 apartments")
-        match = re.search(r"\b(show|display|reveal)\s+level\s+(\d+)", text)
-        if match:
-            level = int(match.group(2))
-            # Set dropdown if available
-            if hasattr(self, "level_dropdown"):
-                idx = self.level_dropdown.findText(str(level))
-                if idx != -1:
-                    self.level_dropdown.setCurrentIndex(idx)
-            # Optionally parse for apartment/space info
-            if "apartment" in text or "resident" in text:
-                if hasattr(self, "apt_info_dropdown"):
-                    idx = self.apt_info_dropdown.findText("Residents")
-                    if idx != -1:
-                        self.apt_info_dropdown.setCurrentIndex(idx)
-            self.send_geometry_command()
-            return True
-
-        # Show specific apartment (e.g., "show apartment key", "show residents")
-        if re.search(r"\b(show|display|reveal)\s+(apartment|resident|key|residents)\b", text):
-            if hasattr(self, "apt_info_dropdown"):
-                idx = self.apt_info_dropdown.findText("Residents")
-                if idx != -1:
-                    self.apt_info_dropdown.setCurrentIndex(idx)
-            self.send_geometry_command()
-            return True
-
         # Hide selected geometry
         if re.search(r"\b(hide|remove)\s+(current|this)\s+(geometry|space|apartment)\b", text):
             self.hide_specific_geometry()
             return True
 
-        # Patterns for level and info type (improved)
-        level_pattern = r"(?:level\s*|lvl\s*|floor\s*)?(\d+)"
-        info_pattern = r"(area|activity|wind|orientation|comfort|temperature|occupancy|residents|spaces|apartments|building|all)"
+        # --- Unified robust pattern for level and info type ---
+        # Accepts: "show utci on level 1", "show level 2 wind", "display residents for level 3", etc.
+        level_pattern = r"(?:level|lvl|floor)\s*(\d+)"
+        info_pattern = r"(activity|area|utci|wind|orientation|comfort|temperature|occupancy|residents|spaces|apartments|key|building|all)"
+        # Find all info types and levels in the text
+        info_matches = re.findall(info_pattern, text, re.IGNORECASE)
+        level_matches = re.findall(level_pattern, text, re.IGNORECASE)
 
-        # Try to match both orders: "show level 3 wind" or "show wind level 3"
-        match = re.search(
-            rf"(?:show|display|what are|what is|give me|can you show|visualize|see|plot|present)[^\n]*?(?:{info_pattern})?[^\n]*?(?:in|of|for)?[^\n]*?{level_pattern}(?:[^\n]*?{info_pattern})?",
-            user_text, re.IGNORECASE
-        )
+        # Try to extract dropdown values
+        level = level_matches[0] if level_matches else None
+        info = info_matches[0] if info_matches else None
 
-        info = None
-        level = None
-        if match:
-            # Find all occurrences of info_pattern and level_pattern
-            info_matches = re.findall(info_pattern, user_text, re.IGNORECASE)
-            level_matches = re.findall(level_pattern, user_text, re.IGNORECASE)
-            # Pick the first found, or default
-            info = info_matches[0] if info_matches else "all"
-            level = level_matches[0] if level_matches else None
-            if level:
-                self.trigger_geometry_display(level=level, info_type=info)
-                return True
+        # Only trigger if BOTH level and info/apt are present
+        if level and info:
+            # Map info keywords to dropdown values
+            space_info_options = [self.space_info_dropdown.itemText(i).lower() for i in range(self.space_info_dropdown.count())] if hasattr(self, "space_info_dropdown") else []
+            apt_info_options = [self.apt_info_dropdown.itemText(i).lower() for i in range(self.apt_info_dropdown.count())] if hasattr(self, "apt_info_dropdown") else []
 
-        # Fallback: match "show all building" or "show all"
-        if re.search(r"show all (building|apartments|spaces)?", user_text, re.IGNORECASE):
-            self.trigger_geometry_display(level="all", info_type="all")
+            # Decide which dropdown to set
+            info_type = None
+            apt_type = None
+            if info:
+                if info.lower() in space_info_options:
+                    info_type = info.capitalize()
+                elif info.lower() in apt_info_options:
+                    apt_type = info.capitalize()
+            # Set dropdowns
+            if level and hasattr(self, "level_dropdown"):
+                idx = self.level_dropdown.findText(str(int(level)))
+                if idx != -1:
+                    self.level_dropdown.setCurrentIndex(idx)
+            if info_type and hasattr(self, "space_info_dropdown"):
+                idx = self.space_info_dropdown.findText(info_type)
+                if idx != -1:
+                    self.space_info_dropdown.setCurrentIndex(idx)
+            if apt_type and hasattr(self, "apt_info_dropdown"):
+                idx = self.apt_info_dropdown.findText(apt_type)
+                if idx != -1:
+                    self.apt_info_dropdown.setCurrentIndex(idx)
+            self.send_geometry_command()
             return True
 
-        # Add more patterns as needed...
+        # Fallback: match "show all building" or "show all"
+        if re.search(r"show all (building|apartments|spaces)?", text, re.IGNORECASE):
+            self.trigger_geometry_display(level="all", info_type="all")
+            return True
 
         return False
 
@@ -779,7 +769,20 @@ class WelcomeTab(QWidget):
         btn_layout.addStretch(1)
 
         content_layout.addWidget(btn_container)
-        content_layout.addStretch(1)
+
+        # --- Add expanding image below the button ---
+        image_path2 = os.path.join("images", "image1.png")
+        self.big_img_label = QLabel()
+        self.big_img_label.setAlignment(Qt.AlignCenter)
+        self.big_img_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.big_img_label.setStyleSheet("margin-top: 12px; margin-bottom: 12px;")
+        pixmap2 = QPixmap(image_path2)
+        if not pixmap2.isNull():
+            # The pixmap will be scaled in resizeEvent below
+            self.big_img_label.setPixmap(pixmap2)
+        else:
+            self.big_img_label.setText("Image not found")
+        content_layout.addWidget(self.big_img_label, stretch=1)
 
         layout.addWidget(content_container)
         self.setLayout(layout)
@@ -788,6 +791,20 @@ class WelcomeTab(QWidget):
     def go_to_survey_tab(self):
         if self.tab_widget:
             self.tab_widget.setCurrentIndex(1)
+
+    # Add this method to WelcomeTab to make the image responsive:
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if hasattr(self, "big_img_label"):
+            orig_pixmap = QPixmap(os.path.join("images", "image1.png"))
+            if not orig_pixmap.isNull():
+                w = self.big_img_label.width()
+                h = self.big_img_label.height()
+                # Only scale down, not up
+                target_w = min(w, orig_pixmap.width())
+                target_h = min(h, orig_pixmap.height())
+                scaled = orig_pixmap.scaled(target_w, target_h, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                self.big_img_label.setPixmap(scaled)
 
 class SurveyTab(QWidget):
     def __init__(self, tab_widget=None):
@@ -1307,13 +1324,18 @@ class ImagesTab(QWidget):
         # Load images from the folder
         import os
         from glob import glob
+        import re
+
+        def natural_sort_key(s):
+            # Sorts strings containing numbers in human order (e.g., 2 before 10)
+            return [int(text) if text.isdigit() else text.lower() for text in re.split(r'(\d+)', os.path.basename(s))]
 
         image_files = []
         for ext in ("*.png", "*.jpg", "*.jpeg", "*.bmp", "*.gif"):
             image_files.extend(glob(os.path.join(images_folder, ext)))
-        image_files.sort()
+        image_files.sort(key=natural_sort_key)  # Natural sort by filename
 
-        # Display images in a grid with modern styling
+        # Display images in a grid with 4 images per row
         for idx, img_path in enumerate(image_files):
             image_container = QWidget()
             image_container.setStyleSheet("""
@@ -1326,10 +1348,10 @@ class ImagesTab(QWidget):
             """)
             image_layout = QVBoxLayout(image_container)
             
-            label = ClickableLabel(img_path)
+            label = ClickableLabel(img_path, image_list=image_files)
             pixmap = QPixmap(img_path)
             if not pixmap.isNull():
-                pixmap = pixmap.scaledToWidth(280, Qt.SmoothTransformation)
+                pixmap = pixmap.scaledToWidth(220, Qt.SmoothTransformation)
                 label.setPixmap(pixmap)
                 label.setAlignment(Qt.AlignCenter)
                 label.setStyleSheet("border-radius: 8px;")
@@ -1338,36 +1360,69 @@ class ImagesTab(QWidget):
                 label.setStyleSheet("color: #ff6b6b; text-align: center;")
             
             image_layout.addWidget(label)
-            grid.addWidget(image_container, idx // 3, idx % 3)
+            grid.addWidget(image_container, idx // 4, idx % 4)  # 4 images per row
 
         layout.addWidget(container)
         self.setLayout(layout)
 
 class ClickableLabel(QLabel):
-    def __init__(self, img_path, parent=None):
+    def __init__(self, img_path, image_list=None, parent=None):
         super().__init__(parent)
         self.img_path = img_path
+        self.image_list = image_list or []
+        self.current_index = self.image_list.index(img_path) if self.image_list and img_path in self.image_list else 0
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
-            self.show_full_image()
+            dlg = ImageViewerDialog(self.image_list, self.current_index, self)
+            dlg.exec_()
 
-    def show_full_image(self):
-        dlg = QDialog(self)
-        dlg.setWindowTitle("Image Viewer")
-        vbox = QVBoxLayout(dlg)
-        lbl = QLabel()
-        pixmap = QPixmap(self.img_path)
+class ImageViewerDialog(QDialog):
+    def __init__(self, image_list, current_index, parent=None):
+        super().__init__(parent)
+        self.image_list = image_list
+        self.current_index = current_index
+
+        self.setWindowTitle("Image Viewer")
+        self.vbox = QVBoxLayout(self)
+        self.lbl = QLabel()
+        self.lbl.setAlignment(Qt.AlignCenter)
+        self.vbox.addWidget(self.lbl)
+
+        # Navigation buttons
+        hbox = QHBoxLayout()
+        self.prev_btn = QPushButton("Previous")
+        self.next_btn = QPushButton("Next")
+        hbox.addWidget(self.prev_btn)
+        hbox.addWidget(self.next_btn)
+        self.vbox.addLayout(hbox)
+
+        self.prev_btn.clicked.connect(self.show_prev)
+        self.next_btn.clicked.connect(self.show_next)
+
+        self.update_image()
+
+    def update_image(self):
+        img_path = self.image_list[self.current_index]
+        pixmap = QPixmap(img_path)
         if not pixmap.isNull():
-            # Scale to fit screen but not larger than original
             screen = QApplication.primaryScreen().availableGeometry()
             max_w = int(screen.width() * 0.8)
             max_h = int(screen.height() * 0.8)
             pixmap = pixmap.scaled(max_w, max_h, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-            lbl.setPixmap(pixmap)
-        vbox.addWidget(lbl)
-        dlg.setLayout(vbox)
-        dlg.exec_()
+            self.lbl.setPixmap(pixmap)
+        else:
+            self.lbl.setText("Failed to load image.")
+
+    def show_prev(self):
+        if self.current_index > 0:
+            self.current_index -= 1
+            self.update_image()
+
+    def show_next(self):
+        if self.current_index < len(self.image_list) - 1:
+            self.current_index += 1
+            self.update_image()
 
 # Global variable to hold the server process
 flask_server_process = None
