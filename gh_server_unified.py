@@ -12,16 +12,18 @@ import re
 import os
 import pandas as pd
 import sqlite3
+
 import random
 from functools import lru_cache
 import threading
 import requests
 
-app = Flask(__name__)
 
-# ============================================================================
-# GLOBAL DATA LOADING AND CACHING
-# ============================================================================
+# flask_server_process_geometry = None
+# flask_server_process_unified = None
+
+# --- Utility: General Q&A logic ---
+conversation_history = []
 
 # Global variables for cached data
 _data_cache = {}
@@ -1016,8 +1018,49 @@ except Exception as e:
     print(f"DEBUG: Failed to load CSV data at startup: {e}")
     geometries = thresh = green = usability = voting_data = distances_data = personas = None
 
+
+# def _get_server_script_path_geometry():
+#     current_dir = os.path.dirname(os.path.abspath(__file__))
+#     return os.path.join(current_dir, "geometry_mod", "gh_server_geometry.py")
+
+# def _get_server_script_path_unified():
+#     current_dir = os.path.dirname(os.path.abspath(__file__))
+#     return os.path.join(current_dir, "gh_server_unified.py")
+
+# def start_flask_servers():
+#     global flask_server_process_geometry, flask_server_process_unified
+#     geometry_script = _get_server_script_path_geometry()
+#     unified_script = _get_server_script_path_unified()
+#     if os.path.exists(geometry_script):
+#         flask_server_process_geometry = subprocess.Popen([sys.executable, geometry_script])
+#         print(f"Started geometry server: {geometry_script} (PID: {flask_server_process_geometry.pid})")
+#     else:
+#         print(f"Geometry server script not found at {geometry_script}")
+#     if os.path.exists(unified_script):
+#         flask_server_process_unified = subprocess.Popen([sys.executable, unified_script])
+#         print(f"Started unified server: {unified_script} (PID: {flask_server_process_unified.pid})")
+#     else:
+#         print(f"Unified server script not found at {unified_script}")
+
+# def stop_flask_servers():
+#     global flask_server_process_geometry, flask_server_process_unified
+#     for proc in [flask_server_process_geometry, flask_server_process_unified]:
+#         if proc:
+#             print(f"Stopping Flask server with PID: {proc.pid}...")
+#             proc.terminate()
+#             proc.wait(timeout=60)
+#             if proc.poll() is None:
+#                 print("Server did not terminate gracefully, killing...")
+#                 proc.kill()
+#             print("Flask server stopped.")
+
+# # Call this before QApplication is created:
+# start_flask_servers()
+# atexit.register(stop_flask_servers)
+
+
 if __name__ == '__main__':
     # Initialize data cache before starting the server
     initialize_data_cache()
     print("🚀 Starting Flask server...")
-    app.run(port=5000, debug=True)
+    app.run(port=5000, debug=True, use_reloader=False)
