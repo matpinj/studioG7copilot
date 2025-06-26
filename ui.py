@@ -22,7 +22,8 @@ import socket
 #added for automated LLM reasoning activity assignments
 from llm_reasoning_test import generate_llm_assignments
 
-def send_udp_command(command: str, port: int = 6000, host: str = "127.0.0.1"):
+def send_udp_command(command: str, port: int = 5004, host: str = "127.0.0.1"):
+    print("Sending UDP command...")
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.sendto(command.encode("utf-8"), (host, port))
 
