@@ -35,6 +35,23 @@ class SpaceQnAUI(QMainWindow):
     # Enhanced CSS Styles for chat bubbles (user right, bot left)
     closestOutdoorFound = pyqtSignal(str)  # Add this line
 
+    def __init__(self):
+        super().__init__()
+        # ... your existing code ...
+
+        # Add this for house key input
+        self.house_key_input = QLineEdit()
+        self.house_key_input.setPlaceholderText("Resident Key (e.g., H23)")
+        # Add to your layout at the top (or wherever appropriate)
+        main_layout = QVBoxLayout()
+        main_layout.addWidget(QLabel("Resident Key:"))
+        main_layout.addWidget(self.house_key_input)
+        # ... then add your other widgets to main_layout ...
+        # At the end:
+        container = QWidget()
+        container.setLayout(main_layout)
+        self.setCentralWidget(container)
+
     chat_style = """
     <style>
     body { 
