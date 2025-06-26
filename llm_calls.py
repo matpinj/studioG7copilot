@@ -167,153 +167,155 @@ def fix_sql_query(dB_context: str, user_question: str, atempted_queries: str, ex
 
 
 
-def suggest_geometric_variations( # type: ignore
+def suggest_geometric_variations(
     space_id: str, 
     resident_persona: str, 
     space_context: str, 
-    green_prediction: str, 
-    threshold_prediction: str,
-    usability_prediction: str, # type: ignore
-    distance_to_space: str, # type: ignore
-    activity_weights_for_resident: str, # type: ignore
+    distance_to_space: str,
+    activity_weights_for_resident: str,
+    activity_logic_context: str,
     current_activity_in_space: str,
-    user_question_for_suggestion: str, # Original user question asking for suggestions
-    desired_activity_for_space: str, # The activity the user wants the space to be good for
-    other_residents_summary: str # New: Summary of other residents who might benefit
-    
+    user_question_for_suggestion: str,
+    desired_activity_for_space: str,
+    other_residents_summary: str,
+    full_db_context: str  # <-- Add this
 ) -> str:
-    # Pre-process space_context to be a JSON-valid string content.
-    # This escapes newlines (e.g., \n to \\n), quotes (e.g., " to \\"),
-    # and backslashes (e.g., \ to \\) so that if the LLM copies it verbatim
-    # into the "space_details" field of its JSON output, it will be valid.
-    if space_context:
-        processed_space_context_for_prompt = json.dumps(space_context)[1:-1]
-    else:
-        processed_space_context_for_prompt = ""
-
+    # ...existing code...
     response = client.chat.completions.create(
     model=completion_model,
-    temperature=1,
-    top_p=0.85,
+    temperature=1.5,
+    top_p=0.9,
     messages=[
+        # ───────────── SYSTEM ─────────────
         {
-            "role": "user",
-            "content": f"""<|begin_of_text|><|start_header_id|>system<|end_header_id|>
+            "role": "system",
+            "content": """
 You are an expert architectural-design assistant.
 
-TASK  
-• From the three allowed geometric actions — \"Extend Slab\", \"Add Wall\", \"Add Louvres\" — **pick exactly one**.  
-• Produce **one** suggestion that best fits the space context and desired activity.  
-• Return **only** a JSON object that follows the schema below.  
-• Do **not** include any explanations, bullet points, or markdown.
+DATA SOURCES
+• gh_data_for_geometry.db           (spaces & residents)
+• llm_activity_assignments.csv      (current assignments)
+• voting_weights.csv                (preferences)
+Use nothing else.  Never write single quotes.  Output a bare JSON object.
 
-DECISION RULES  
-If \"variation_type\" == \"Extend Slab\"  
- • variation_name & description may **only** describe a slab extension.  
- • direction must optimise sun/wind based on Orientation.  
- • area ≤ slab_extension_limit_sqm (if provided), otherwise ≤ 5 m² or ≤ 50 % of the original slab, whichever is smaller.  
-If \"variation_type\" == \"Add Wall\"  
- • Interpret this as adding a **low wall or parapet**, not a full-height enclosure.  
- • variation_name & description must reflect that: e.g., a parapet, edge wall, or privacy bench.  
- • Possible purposes include:  
-  – visual or spatial privacy  
-  – defining boundaries for loggias, balconies, or sports areas  
-  – providing a ledge for sitting, flower boxes, or resting equipment  
- • Do not claim it “creates a sports area” by itself — instead, describe how it enables or enhances activity in the existing space.
-If \"variation_type\" == \"Add Louvres\"  
- • variation_name & description may **only** describe louvres.
- • Specify louvre height between 0.2 and 0.8 meters.
+GOAL
+Choose exactly one action → Extend Slab | Add Wall | Add Louvres
+Return one suggestion that best matches the space + desired activity.
 
-SPECIAL CASE:  
-• If the desired_activity_for_space is \"Sunbath\" and no variation_type has been chosen yet, strongly prefer \"Add Wall\" (e.g., a low parapet) for wind protection and privacy while lying down.
+CONSTRAINTS
+Extend Slab  → slab only · sun/wind-optimised direction · area ≤ min(5 m², 50 %, slab_limit)
+Add Wall    → low wall / parapet only · privacy / edge / seat · do not claim it “creates” an activity
+Add Louvres → louvres only · height 0.2-0.8 m
+If desired activity = Sunbath and no action yet → prefer Add Wall for wind/privacy.
 
-DISALLOWS BY ACTION:
-• Avoid selecting \"Add Wall\" for activities that rely on openness, vegetation, or visual access such as: Healing Garden, Viewpoint, Urban Agriculture Garden, Biodiversity Balcony — unless justified by wind exposure, privacy score, or safety.  
-• Avoid selecting \"Extend Slab\" for passive, contemplative, or stationary activities with small spatial demands such as: Offline Retreat, Creative Corridor, Flexible Space, unless the current area is under 4 sqm.  
-• Avoid selecting \"Add Louvres\" for activities that benefit from direct sun exposure such as: Sunbath, Healing Garden, Community Pool/BBQ, Urban Agriculture Garden — unless shading needs outweigh the solar gain.
+DISALLOW
+• Add Wall for open/green uses (Healing Garden, Viewpoint, Urban Agri, Biodiversity Balcony) unless wind/privacy/safety justify.
+• Extend Slab for small passive spaces (<4 m²) such as Offline Retreat, Creative Corridor, Flexible Space.
+• Add Louvres for sun-hungry uses (Sunbath, Healing Garden, Pool/BBQ, Urban Agri) unless shading clearly wins.
 
-REASONING REQUIREMENTS:
-- Justify the selected variation based on spatial characteristics:
-  • Orientation (e.g. East-facing = morning sun, South = strong exposure)  
-  • Area (e.g. sports ≥ 10 m², sunbathing ≥ 6 m²)  
-  • Privacy and open sides  
-  • Usability and green suitability predictions  
-  • Adjacency to indoor spaces  
-- Use architectural logic to explain why this option is better than the others.
-- Avoid vague phrases like “this helps” or “this improves comfort.” Instead, use **objective reasoning** whenever possible.
-- Reference or estimate **quantities** based on the input:
-  • Area change (e.g., shaded vs. unshaded m²)
-  • UTCI reduction, if known
-  • % increase in usability, suitability, or comfort
-  • Height or length of elements (e.g., 2m parapet, 3m slab extension)
-- When referring to user needs, cite measurable characteristics (e.g., “young professionals prefer partially shaded zones during peak sun hours” is better than vague emotional claims).
-- If other residents benefit, explain why, based on their preferences and proximity.
+REASONING (include inside JSON)
+Base decisions on Orientation, Area, Privacy, Open Sides, Usability, Green Suitability, Indoor adjacency.
+Use numbers—area Δ, UTCI shift, % suitability, element sizes, neighbour distances, profile data.
+Explain who else benefits and why.
 
-OUTPUT SCHEMA  
-{{{{
+VERY IMPORTANT
+Do not use markdown code blocks. Output only a valid JSON object, nothing else.
+
+EXAMPLE OUTPUT:
+{
   "space_id": "O2",
-  "space_details": "Type: Balcony\nArea: 9sqm\nOrientation: East\nHeight: 3m\nLevel: 1\nOpen Side: 1\nWind Exposure: 4.88\nUTCI: 25.4°C\nNeighbour Distance: 30.97m\nUsability: cool_breezy\nGreen Suitability: suitable\nPrivacy Score: 0.033",
-  "user_profile": "Young Professionals",
-  "user_question_for_suggestion": "Who else benefits?",
-  "desired_activity_for_space": "Sports",
-  "resident_distance_to_space": "62m",
-  "current_activity_in_space": "Sitting",
-  "usability_prediction": "UTCI: 25.4°C; Area: 9sqm; Open Side: 1; Privacy Score: 0.033",
+  "space_details": "balcony",
+  "user_profile": "travelers/expats",
+  "user_question": "Who else benefits?",
+  "desired_activity": "Sunbath",
+  "resident_distance": 60.42,
+  "current_activity": "Sunbath",
+  "usability_prediction": "",
   "suggestions": [
-    {{
+    {
       "variation_type": "Add Wall",
-      "variation_name": "East Parapet for Spatial Definition",
-      "description": "Install a 2.5m-long, 1.2m-high parapet along the east-facing open edge to provide a spatial boundary for light sports and reduce visual exposure.",
-      "reason_for_profile": "Young professionals are likely to use the space for light physical activity. A defined boundary enables safer movement and a more intentional use of the limited 9sqm area.",
-      "optimal_time_impact_description": "Morning use becomes more comfortable due to added wind protection on the exposed side.",
-      "profile_suitability_notes": "Helps transform the currently undefined space into a more structured micro-court for solo or duo activities.",
-      "suitability_percentage_increase": "22%",
-      "comfort_usability_impact": "Improved privacy, boundary safety, and psychological comfort during active use.",
-      "other_beneficiaries_explained": {{
-        "H11": "Located 5m away, benefits from reduced glare and shared view of the activity zone.",
-        "H7": "Visually connected and likely to use the balcony for similar purposes.",
-        "H39": "Receives indirect shading and increased perception of communal use."
-        }},
-
-      "wall_height": 1.2,
-      "slab_extension (sqm)": 3,
+      "variation_name": "Low wall for wind/privacy",
+      "description": "Adds a low wall to provide wind and privacy while still allowing sunlight.",
+      "reason_for_profile": "Suitable for travelers/expats who value sunbathing and relaxation.",
+      "optimal_time_impact": "+1 hour of usable time",
+      "profile_suitability_notes": "This suggestion is suitable for the traveler/expat profile as it provides a comfortable and private space for sunbathing.",
+      "suitability_%_increase": 20,
+      "comfort_usability_impact": "Improved comfort and usability due to added wind protection and privacy.",
+      "other_beneficiaries": {"H8": "Sunbath", "H67": "Sunbath"},
+      "wall_height": 0.8,
+      "slab_extension_sqm": 2,
       "louvre_height": 0.5,
-      "other_activities_benefit": ["Stretching", "Balance Training"]
-    }}
+      "other_activities_benefit": []
+    }
   ],
-  "summary_reasoning": "The 9sqm balcony lacks spatial definition and privacy. Adding a parapet on the open side enables safe and focused sports activity, especially for young residents. Similar nearby households benefit from the improved visual shielding and shared potential for active use."
-}}}}
+  "summary_reasoning":     str,
+  "householder_reasoning": {resident_id: str, ...}
+}
 
-REMINDER → Respond **only** with a JSON object that starts with '{{' and ends with '}}'.  
-<|eot_id|><|start_header_id|>user<|end_header_id|>
-Here is the space context and user request:
+OUTPUT SCHEMA
+{
+  "space_id":              str,
+  "space_details":         str,
+  "user_profile":          str,
+  "user_question":         str,
+  "desired_activity":      str,
+  "resident_distance":     str,
+  "current_activity":      str,
+  "usability_prediction":  str,
+  "suggestions": [{
+      "variation_type":           "Extend Slab" | "Add Wall" | "Add Louvres",
+      "variation_name":           str,
+      "description":              str,
+      "reason_for_profile":       str,
+      "optimal_time_impact":      str,
+      "profile_suitability_notes":str,
+      "suitability_%_increase":   str,
+      "comfort_usability_impact": str,
+      "other_beneficiaries":      {resident_id:str,…},
+      "wall_height": float|null,  // e.g. 0.8 or null
+      "suitability_%_increase": int|string, // e.g. 20 or "20%"
+      "louvre_height":            float|null,
+      "slab_extension_sqm":       float|null, // e.g. 2 or null
+      "other_activities_benefit": [str,…]
+  }],
+  "summary_reasoning": "Adding a low wall increases privacy and comfort for sunbathing, benefiting H8 and H67.",
+  "householder_reasoning": {
+    "H3": "H3 is the main user of this space and values privacy for sunbathing.",
+    "H9": "H9 benefits from improved wind protection while relaxing on the balcony."
+}
 """
         },
+
+        # ───────────── USER ─────────────
         {
             "role": "user",
-            "content": f"""
-Generate geometric variations for the following:
-Space ID: {space_id}
-Resident Persona (User Profile): {resident_persona}
-Resident's Distance to this Space: {distance_to_space}
-Resident's Activity Preferences for this space (weights): {activity_weights_for_resident}
-Other Residents Summary (potential beneficiaries based on data): {other_residents_summary}
-User Question for Suggestion: {user_question_for_suggestion}
-Desired Activity for this Space: {desired_activity_for_space}
-Current Activity in this Space: {current_activity_in_space}
-Space Details:
-{processed_space_context_for_prompt}
+            "content": f"""\
+SID:{space_id}
+Persona:{resident_persona}
+Dist:{distance_to_space}
+Weights:{activity_weights_for_resident}
+Others:{other_residents_summary}
+Q:{user_question_for_suggestion}
+Desired:{desired_activity_for_space}
+Current:{current_activity_in_space}
+Space:{space_context}
+Logic:{activity_logic_context}
+WallRange:0.8-1.3
+LouvreRange:0.2-0.8
 
-Threshold Prediction for this space: {threshold_prediction}
-Wall Height Range (meters): 0.8 to 1.3
-Louvre Height Range (meters): 0.2 to 0.8
-Green Prediction for this space: {green_prediction}
-Usability Prediction for this space: {usability_prediction}
+# ML Activity Logic Context (from ml_activity_logic.db):
+{activity_logic_context}
+
+# FULL DATABASE CONTEXT (gh_data_for_geometry.db):
+{full_db_context}
+
 """
-        }
 
+
+        }
     ]
 )
+
 
 
     return response.choices[0].message.content

@@ -5,7 +5,7 @@ import os
 
 # Load all files
 conn = sqlite3.connect('sql/gh_data.db')
-distances = pd.read_sql_query("SELECT * FROM resident_distances", conn)
+distances = pd.read_sql_query("SELECT * FROM resident_distances_all", conn)
 personas = pd.read_sql_query("SELECT * FROM personas_assigned", conn)
 conn.close()
 
@@ -28,8 +28,8 @@ resident_map = {
 # Process weights
 results = []
 for _, row in distances.iterrows():
-    space_id = row["Outdoor Space"]
-    for resident_key in row.index[1:]:
+    space_id = row["Source Node"]  # <-- Use the correct column name for the matrix
+    for resident_key in row.index[1:]:  # Skip the first column ("Source Node")
         if pd.isna(row[resident_key]) or resident_key not in resident_map:
             continue
 
