@@ -22,8 +22,15 @@ from geometry_mod.geometry_tab_handler import geometry_tab # Import the blueprin
 app = Flask(__name__)
 app.register_blueprint(geometry_tab) # Register the blueprint
 
+import socket
 
+def send_udp_command(message, host="127.0.0.1", port=9000):  # Set port to your gHowl UDP receiver port!
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.sendto(message.encode(), (host, port))
 
+@app.route('/initiate_gh_workflow', methods=['POST'])
+def initiate_gh_workflow():
+    return suggest_geometric_variations_route()
 
 @app.route('/llm_call', methods=['POST'])
 def llm_call():
@@ -109,60 +116,87 @@ def llm_space_assignment():
     result = generate_llm_assignment_for_id(space_id)
     return jsonify(result)
 
-@app.route('/llm_general_call', methods=['POST'])
-def llm_general_call():
-    data = request.get_json()
-    user_input = data.get('input', '')
-    user_profile = data.get('profile', 'young_entrepreneurs')  # default if not passed
+# ---------------------------------------------------------------------------
+# 1.  Fake engine – ALWAYS returns a well-formed dict in the schema you gave
+# ---------------------------------------------------------------------------
+def get_intelligent_geometric_suggestions(
+        space_id: str,
+        resident_key: str,
+        user_question: str,
+        desired_activity: str):
+    """
+    Fake version for local testing.
+    Ignores the inputs and returns a deterministic payload.
+    """
+    return {
+        "space_id":        "O2",
+        "space_details":   "balcony",
+        "user_profile":    "travelers/expats",
+        "user_question":   "Who else benefits?",
+        "desired_activity": "Sunbath",
+        "resident_distance": 60.42,
+        "current_activity": "Sunbath",
+        "usability_prediction": "",
+        "suggestions": [
+            {
+                "variation_type": "Add Wall",
+                "variation_name": "Low wall for wind/privacy",
+                "description":
+                    "Adds a low wall to provide wind and privacy while still allowing sunlight.",
+                "reason_for_profile":
+                    "Suitable for travelers/expats who value sunbathing and relaxation.",
+                "optimal_time_impact": "+1 hour of usable time",
+                "profile_suitability_notes":
+                    "This suggestion is suitable for the traveler/expat profile as it provides a comfortable and private space for sunbathing.",
+                "suitability_%_increase": 20,
+                "comfort_usability_impact":
+                    "Improved comfort and usability due to added wind protection and privacy.",
+                "other_beneficiaries": {"H8": "Sunbath", "H67": "Sunbath"},
+                "wall_height": 0.8,
+                "slab_extension_sqm": 2,
+                "louvre_height": 0.5,
+                "other_activities_benefit": []
+            }
+        ],
+        "summary_reasoning":
+            "A low parapet mitigates cross-winds and visual exposure, extending comfortable "
+            "sun-hours and benefiting neighbouring residents who also sunbathe.",
+        "householder_reasoning": {
+            "H8": "Gains calmer sunbathing conditions.",
+            "H67": "Enjoys extra privacy and lower wind chill."
+        }
+    }
 
-    answer = answer_general_questions(user_input, user_profile)
-    return jsonify({'response': answer})
 
-
-##~~GEOMETRIC VARIATIONS FROM LLM AND SQL~~##
-
-@app.route('/suggest_geometric_variations', methods=['POST'])
+# ---------------------------------------------------------------------------
+# 2.  Patch the existing route so it sends ONE clean JSON string via UDP
+# ---------------------------------------------------------------------------
+@app.route("/suggest_geometric_variations", methods=["POST"])
 def suggest_geometric_variations_route():
+    print("Endpoint /suggest_geometric_variations called")
     data = request.get_json()
 
     if not data:
         return jsonify({"error": "Request body must be JSON."}), 400
 
-    space_id = data.get('space_id')
-    resident_key = data.get('resident_key') 
-    user_question = data.get('question') # This can be a specific question or a general request for suggestions
-    desired_activity = data.get('desired_activity') # New: Get desired activity
+    try:
+        suggestions_data = get_intelligent_geometric_suggestions(
+            data.get("space_id"),
+            data.get("resident_key"),
+            data.get("question"),
+            data.get("desired_activity")
+        )
 
-    # Path 1: Geometric Suggestions (if space_id and resident_key are provided)
-    # The user_question, if present, will be used to tailor these suggestions.
-    if space_id and resident_key:
-        try:
-            # Orchestrator now returns a dictionary (parsed JSON or error dict)
-            suggestions_data = get_intelligent_geometric_suggestions(space_id, resident_key, user_question, desired_activity)
-            if "error" in suggestions_data:
-                # Log the error if needed, using app.logger if Flask logging is configured
-                app.logger.error(f"Error from orchestrator for space_id {space_id}, resident {resident_key}: {suggestions_data.get('details', '')}. Raw: {suggestions_data.get('raw_response', '')}")
-                return jsonify(suggestions_data), 500 # Propagate error
-            return jsonify(suggestions_data), 200
-        except Exception as e:
-            app.logger.error(f"Unexpected error in /suggest_geometric_variations for space_id {space_id}, resident {resident_key}: {str(e)}")
-            return jsonify({"error": f"Failed to suggest geometric variations: {str(e)}"}), 500
+        # Send the entire object over UDP as a single JSON payload
+        udp_msg = json.dumps(suggestions_data, ensure_ascii=False)
+        print(f"[OK] Sending UDP to 127.0.0.1:9000:\n{udp_msg}")
+        send_udp_command(udp_msg, host="127.0.0.1", port=9000)
 
-    # Path 2: General SQL Query (if only user_question is provided, and space_id/resident_key are missing for geometric path)
-    elif user_question: # and not (space_id and resident_key)
-        try:
-            result = process_natural_language_to_sql_answer(user_question)
-            if "error" in result:
-                 # Assuming 500 for critical issues from orchestrator, 400 for bad input/query.
-                status_code = 500 if "Could not determine" not in result["error"] and "not found in database schema" not in result["error"] else 400
-                return jsonify(result), status_code
-            return jsonify(result), 200
-        except Exception as e:
-            app.logger.error(f"Error processing natural language question to SQL: {str(e)}")
-            return jsonify({"error": f"Failed to process question for SQL: {str(e)}"}), 500
-    else:
-        # Path 3: Insufficient information for either route
-        return jsonify({"error": "Invalid request. Provide 'question' for a general query, or 'space_id', 'resident_key' (and optionally 'question' and 'desired_activity') for geometric suggestions."}), 400
+        return jsonify(suggestions_data), 200
+
+    except Exception as e:
+        app.logger.error(f"Unexpected error in /suggest_geometric_variations: {e}")
+        return jsonify({"error": f"Failed to suggest geometric variations: {e}"}), 500
 
  
 ##~~GEOMETRIC VARIATIONS FROM LLM AND SQL~~##
@@ -170,4 +204,4 @@ def suggest_geometric_variations_route():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5004)
+    app.run(debug=False, port=5004)

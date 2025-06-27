@@ -183,8 +183,8 @@ def suggest_geometric_variations(
     # ...existing code...
     response = client.chat.completions.create(
     model=completion_model,
-    temperature=0.5,
-    top_p=0.9,
+    temperature=0.15,
+    top_p=0.95,
     messages=[
         # ───────────── SYSTEM ─────────────
         {
@@ -241,7 +241,7 @@ EXAMPLE OUTPUT:
       "profile_suitability_notes": "This suggestion is suitable for the traveler/expat profile as it provides a comfortable and private space for sunbathing.",
       "suitability_%_increase": 20,
       "comfort_usability_impact": "Improved comfort and usability due to added wind protection and privacy.",
-      "other_beneficiaries": {"H8": "Sunbath", "H67": "Sunbath"},
+      "other_beneficiaries": {"H8": "Sunbath", "H67": "Sunbath"}, //Dictionary of other residents and their activities
       "wall_height": 0.8,
       "slab_extension_sqm": 2,
       "louvre_height": 0.5,
@@ -252,7 +252,8 @@ EXAMPLE OUTPUT:
   "householder_reasoning": {resident_id: str, ...}
 }
 
-OUTPUT SCHEMA
+EXTREMELY IMPORTANT
+OUTPUT SCHEMA (FOLLOW ALWAYS STRICTLY THIS FORMAT)
 {
   "space_id":              str,
   "space_details":         str,

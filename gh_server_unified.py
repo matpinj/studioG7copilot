@@ -18,6 +18,7 @@ from functools import lru_cache
 import threading
 import requests
 
+app = Flask(__name__)
 
 # flask_server_process_geometry = None
 # flask_server_process_unified = None
@@ -1063,4 +1064,4 @@ if __name__ == '__main__':
     # Initialize data cache before starting the server
     initialize_data_cache()
     print("🚀 Starting Flask server...")
-    app.run(port=5000, debug=True, use_reloader=False)
+    app.run(port=5000, debug=False, use_reloader=False)

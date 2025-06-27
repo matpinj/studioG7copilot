@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import (
     QApplication, QWidget, QTabWidget, QVBoxLayout, QHBoxLayout,
     QTextEdit, QTextBrowser, QLineEdit, QPushButton, QLabel, QCheckBox, QComboBox, QSizePolicy, QScrollArea, QGridLayout, QDesktopWidget, QDialog
 )
-from PyQt5.QtCore import QThread, pyqtSignal, Qt, QFileSystemWatcher, QObject
+from PyQt5.QtCore import QThread, pyqtSignal, Qt, QFileSystemWatcher, QObject, QTimer
 from PyQt5.QtGui import QPalette, QColor, QPixmap, QFont
 import sys
 from html import escape
@@ -20,8 +20,52 @@ import requests
 
 import socket
 
+flask_server_process_geometry = None
+flask_server_process_unified = None
+
 #added for automated LLM reasoning activity assignments
 from llm_reasoning_test import generate_llm_assignments
+
+####SERVERS#####
+
+
+def _get_server_script_path_geometry():
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(current_dir, "geometry_mod", "gh_server_geometry.py")
+
+def _get_server_script_path_unified():
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(current_dir, "gh_server_unified.py")
+
+def start_flask_servers():
+    global flask_server_process_geometry, flask_server_process_unified
+    geometry_script = _get_server_script_path_geometry()
+    unified_script = _get_server_script_path_unified()
+    if os.path.exists(geometry_script):
+        flask_server_process_geometry = subprocess.Popen([sys.executable, geometry_script])
+        print(f"Started geometry server: {geometry_script} (PID: {flask_server_process_geometry.pid})")
+    else:
+        print(f"Geometry server script not found at {geometry_script}")
+    if os.path.exists(unified_script):
+        flask_server_process_unified = subprocess.Popen([sys.executable, unified_script])
+        print(f"Started unified server: {unified_script} (PID: {flask_server_process_unified.pid})")
+    else:
+        print(f"Unified server script not found at {unified_script}")
+
+def stop_flask_servers():
+    global flask_server_process_geometry, flask_server_process_unified
+    for proc in [flask_server_process_geometry, flask_server_process_unified]:
+        if proc:
+            print(f"Stopping Flask server with PID: {proc.pid}...")
+            proc.terminate()
+            proc.wait(timeout=60)
+            if proc.poll() is None:
+                print("Server did not terminate gracefully, killing...")
+                proc.kill()
+            print("Flask server stopped.")
+
+####SERVERS#####
+
 
 def send_udp_command(command: str, port: int = 6000, host: str = "127.0.0.1"):
     print("Sending UDP command...")
@@ -418,6 +462,8 @@ class ChatTab(QWidget):
         full_html = self.chat_style + '<div class="chat-container">' + ''.join(self.chat_history_html) + '</div>'
         self.chat_display.setHtml(full_html)
         self.chat_display.verticalScrollBar().setValue(self.chat_display.verticalScrollBar().maximum())
+
+    
 
     def send_message(self):
         user_text = self.input_box.text()
@@ -1011,11 +1057,21 @@ class MainWindow(QWidget):
         self.qna_neg_tab = SpaceQnAUI()
         tabs.addTab(self.qna_neg_tab, "Q&A + Negotiate")
 
-        tabs.addTab(GeometryWorkflowTab("http://localhost:5004/initiate_gh_workflow"), "Geometry")
+        self.geometry_tab = GeometryWorkflowTab("http://localhost:5004/suggest_geometric_variations")
+        tabs.addTab(self.geometry_tab, "Geometry")
 
         images_tab = ImagesTab(images_folder="images")
         tabs.addTab(images_tab, "Images")
         
+
+
+
+        # --- Add this synchronization code ---
+        self.qna_neg_tab.house_key_input.textChanged.connect(self.geometry_tab.resident_key_input.setText)
+        self.geometry_tab.resident_key_input.textChanged.connect(self.qna_neg_tab.house_key_input.setText)
+
+
+
         layout.addWidget(tabs)
         self.setLayout(layout)
 
@@ -1039,10 +1095,10 @@ class GeometryWorkflowTab(QWidget):
         self.endpoint = endpoint
 
         layout = QVBoxLayout()
-        layout.setContentsMargins(12, 8, 12, 8)  # Reduced margins
+        layout.setContentsMargins(12, 8, 12, 8)
         layout.setSpacing(10)
 
-        # Create modern container
+        # Create modern container (only ONCE)
         container = QWidget()
         container.setStyleSheet("""
             QWidget {
@@ -1055,6 +1111,25 @@ class GeometryWorkflowTab(QWidget):
         container_layout = QVBoxLayout(container)
         container_layout.setSpacing(8)
 
+        # --- Coffee Banner ---
+        self.banner = QLabel("☕ Take a coffee while geometry loads...")
+        self.banner.setAlignment(Qt.AlignCenter)
+        self.banner.setStyleSheet("""
+            QLabel {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                    stop:0 #667eea, stop:1 #f093fb);
+                color: white;
+                border-radius: 16px;
+                font-size: 18px;
+                font-weight: 700;
+                padding: 18px 0;
+                margin-bottom: 12px;
+                margin-top: 6px;
+            }
+        """)
+        self.banner.hide()
+        container_layout.addWidget(self.banner)
+
         # Enhanced input styling with responsive design
         input_style = """
             QLineEdit {
@@ -1066,7 +1141,7 @@ class GeometryWorkflowTab(QWidget):
                 font-size: 14px;
                 font-family: 'SF Pro Display', 'Segoe UI', 'Inter', sans-serif;
                 min-height: 20px;
-                max-width: none;  /* Allow full width expansion */
+                max-width: none;
             }
             QLineEdit:focus {
                 border-color: rgba(99, 102, 241, 0.6);
@@ -1084,7 +1159,7 @@ class GeometryWorkflowTab(QWidget):
                 font-size: 14px;
                 font-family: 'SF Pro Display', 'Segoe UI', 'Inter', sans-serif;
                 min-height: 20px;
-                min-width: 180px;  /* Responsive minimum width */
+                min-width: 180px;
             }
             QComboBox:hover {
                 background: rgba(255, 255, 255, 0.12);
@@ -1199,7 +1274,7 @@ class GeometryWorkflowTab(QWidget):
 
         layout.addWidget(container)
         self.setLayout(layout)
-
+    
     def send_request(self):
         payload = {
             "space_id": self.space_id_input.text(),
@@ -1213,6 +1288,11 @@ class GeometryWorkflowTab(QWidget):
             return
 
         self.response_display.append(f"<b>Submitting Job to GH:</b> {json.dumps(payload)}")
+        self.banner.show()
+        QTimer.singleShot(20000, self.banner.hide)  # Hide after 20 seconds
+
+
+
         self.send_btn.setEnabled(False)
         
         self.worker = RequestWorker(self.endpoint, payload)
@@ -1228,21 +1308,55 @@ class GeometryWorkflowTab(QWidget):
                 self.response_display.append(f"<i>Details: {data.get('details')}</i>")
             return
 
-        user_question = data.get("user_question_for_suggestion", "").lower()
         suggestions = data.get("suggestions", [])
-        summary = data.get("summary_reasoning", "No summary provided.")
+        summary = (
+            data.get("summary_reasoning")
+            or data.get("Summary Reasoning")
+            or data.get("summaryReasoning")
+            or None
+        )
+        householder = (
+            data.get("householder_reasoning")
+            or data.get("Householder Reasoning")
+            or data.get("householderReasoning")
+            or None
+        )
 
+        # If not found, try to extract from free text after JSON
+        if not summary or not householder:
+            # If your backend returns a 'raw' field or similar, use that. Otherwise, reconstruct from the original LLM output.
+            # Here, let's assume the backend puts the full LLM output in data.get("raw") or data.get("llm_output")
+            raw_text = data.get("raw") or data.get("llm_output") or ""
+            if not raw_text and hasattr(self, "last_llm_output"):
+                raw_text = self.last_llm_output  # If you store it elsewhere
+
+            # Try to extract summary reasoning
+            if not summary:
+                m = re.search(r"Summary reasoning[:\-]*\s*(.+?)(?:\n|$)", raw_text, re.IGNORECASE)
+                if m:
+                    summary = m.group(1).strip()
+            if not summary:
+                summary = "No summary provided."
+
+            # Try to extract householder reasoning (may be multiline)
+            if not householder:
+                m = re.search(r"Householder reasoning[:\-]*\s*((?:.|\n)+)", raw_text, re.IGNORECASE)
+                if m:
+                    householder = m.group(1).strip().split('\n')[0]
+            if not householder:
+                householder = "No householder reasoning provided."
+
+        # ... rest of your display code ...
         display_text = f"<b>LLM Response:</b>\n"
-
         if suggestions and isinstance(suggestions, list) and len(suggestions) > 0:
             suggestion = suggestions[0]
             display_text += f"<b>Suggestion:</b> {suggestion.get('variation_name', 'N/A')}\n"
             display_text += f"<i>Description:</i> {suggestion.get('description', 'N/A')}\n"
-            send_udp_command(json.dumps(data))
 
         display_text += f"\n<b>Summary Reasoning:</b> {summary}"
-        self.response_display.append(display_text)
+        display_text += f"\n<b>Householder Reasoning:</b><br>{householder}"
 
+        self.response_display.append(display_text)
     def handle_submit_error(self, error_msg):
         try:
             import re, json
@@ -1394,6 +1508,11 @@ def stop_flask_server():
 #for gh_server_geometry
 
 if __name__ == "__main__":
+
+    # Start both servers when the UI launches
+    start_flask_servers()
+    atexit.register(stop_flask_servers)
+
     app = QApplication(sys.argv)
     app.setStyle("Fusion")  # Modern built-in style
 
