@@ -21,6 +21,31 @@ def llm_call():
     answer = classify_input(user_input)
     return jsonify({'response': answer})
 
+@app.route('/ping', methods=['GET'])
+def ping():
+    return jsonify({'message': 'pong'})
+from llm_negotiation import furnishing_space
+
+@app.route('/geometry_suggestion', methods=['POST'])
+def geometry_suggestion():
+    data = request.get_json()
+    resident_id = data.get("resident_id")
+
+    result = furnishing_space({"resident_id": resident_id})
+
+    if "error" in result:
+        return jsonify({
+            "response": result["error"],
+            "conversation_history": []
+        }), 400
+
+    return jsonify({
+        "response": result["result"],
+        "resident_id": result["resident_id"],
+        "outdoor_id": result["outdoor_id"],
+        "activity": result["activity"]
+    })
+
 
 @app.route('/llm_nearby_space_qna', methods=['POST'])
 def llm_nearby_space_qna():

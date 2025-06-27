@@ -147,6 +147,88 @@ def assign_activity(params):
         "params": params
     }
 
+def furnishing_space(params):
+    """
+    Given a resident_key (e.g., 'H1'), find the closest Outdoor Space based on resident_distances.csv.
+    """
+    resident_id = params.get("resident_id")
+    print("[DEBUG] furnishing_space input:", resident_id)
+    print("[DEBUG] Received resident_id param:", resident_id)
+    
+    if not resident_id:
+        return {"error": "Missing resident_id."}
+    
+    try:
+        # Use all existing data
+        _, _, _, _, _, resident_distances, _ = load_csvs()
+
+        # Patch: If Outdoor_Space columns are missing, fallback to manual CSV load
+        if not any("Outdoor_Space" in col for col in resident_distances.columns):
+            print("[DEBUG] resident_distances missing Outdoor_Space columns — loading correct CSV manually")
+            resident_distances = pd.read_csv("resident_data/resident_distances.csv")
+            print("[DEBUG] resident_distances columns (pre-fix):", resident_distances.columns.tolist())
+
+            # Transpose so residents become rows, Outdoor_Space_* become columns
+            resident_distances = resident_distances.set_index("Outdoor_Space").T.reset_index()
+            resident_distances.rename(columns={"index": "resident"}, inplace=True)
+
+            print("[DEBUG] resident_distances columns (post-fix):", resident_distances.columns.tolist())
+
+        # Find the row matching the resident
+        row = resident_distances[resident_distances["resident"] == resident_id]
+        if row.empty:
+            return {"error": f"No data found for resident '{resident_id}'."}
+
+        row = row.iloc[0]
+        print("[DEBUG] Distance row for resident:", row.to_dict())
+        # Find the closest Outdoor_Space
+        outdoor_columns = [col for col in row.index if col != "resident"]
+        if not outdoor_columns:
+            return {"error": "No 'Outdoor_Space' columns found in distances CSV."}
+
+        closest_space_col = min(outdoor_columns, key=lambda col: row[col])
+        outdoor_id = closest_space_col  # already 'O1', 'O2', etc.
+
+        # Load activity assignments
+        activity_df = pd.read_csv("llm_reasoning/llm_activity_assignments.csv")
+        print("[DEBUG] activity_df head:\n", activity_df.head())
+        print("[DEBUG] activity_df columns:", activity_df.columns.tolist())
+        print("[DEBUG] Checking for activity of outdoor_id:", outdoor_id)
+        print("[DEBUG] activity_df['space_id'] sample:", activity_df["space_id"].unique().tolist()[:10])  # just first 10
+        activity_match = activity_df[activity_df["space_id"] == outdoor_id]
+
+        try:
+            if activity_match.empty:
+                print("[DEBUG] No activity match found for:", outdoor_id)
+                activity = "Unknown"
+            else:
+                matched_row = activity_match.iloc[0]
+                print("[DEBUG] Matched row content:", matched_row.to_dict())
+                activity = matched_row.get("assigned_activity", "Unknown")
+            print("[DEBUG] Final selected activity:", activity)
+        except Exception as e:
+            print("[DEBUG] Exception while extracting activity:", str(e))
+            activity = "Unknown"
+
+        result = {
+            "result": f"closest outdoor to '{resident_id}' is '{outdoor_id}, sent to grasshopper for visualization'.",
+            "resident_id": resident_id,
+            "outdoor_id": outdoor_id,
+            "activity": activity
+        }
+
+        print("[DEBUG] furnishing_space output:", result)
+        print("[DEBUG] activity value sent:", result.get("activity"))
+
+        # Filter only valid activities
+
+        return result
+
+    except Exception as e:
+        error = {"error": str(e)}
+        print("[DEBUG] furnishing_space error:", error)
+        return error
+
 
 
 #ACTIONS DICTIONARY
@@ -158,6 +240,7 @@ ACTION_DISPATCHER = {
     "process_booking": process_booking,
     "summarize_preferences": summarize_preferences,
     "assign_activity": assign_activity,
+    "furnishing_space": furnishing_space,
 }
 
 #ROUTE FOR SUGGESTING ACTIONS
@@ -236,6 +319,7 @@ Use only these action names:
 - "process_booking": For requests about booking a space or activity for a certain time.
 - "assign_activity": For confirming or finalizing an activity assignment.
 - "summarize_preferences": For summarizing the user's activity or space preferences.
+- "furnishing_space": for requests about showing furniture. 
 
 Respond ONLY with valid JSON. No extra text.
 
@@ -310,6 +394,16 @@ Response:
     "activity": "Sunbath"  # Example activity to assign
   },
   "reasoning": "User is satisfied and wants to finalize the activity assignment."
+}
+User: " i want to see furniture in my balcony!"
+Response:
+{
+  "action": "furnishing_space",
+  "parameters": {
+    "user_id": "H5",  # Example user ID
+    "space_id": "O1",  # Example outdoor space ID
+  },
+  "reasoning": "User want to visualize the space."
 }
 
 User: "Can you summarize my choices for activities?"

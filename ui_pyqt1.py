@@ -107,6 +107,36 @@ class ChatTab(QWidget):
             geom_layout.addWidget(self.hide_specific_btn)
 
             layout.addLayout(geom_layout)
+        elif "geometry_suggestion" in self.endpoint:
+            geom_layout = QHBoxLayout()
+
+            # Label + dropdown for selecting resident ID
+            apt_info_box = QHBoxLayout()
+            apt_info_box.setSpacing(4)
+
+            apt_info_label = QLabel("Resident ID:")
+            apt_info_label.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
+            apt_info_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+
+            self.apt_info_dropdown = QComboBox()
+            self.apt_info_dropdown.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+
+            # Add actual resident IDs (can also load from CSV)
+            self.apt_info_dropdown.addItems([
+                "H1", "H2", "H3", "H4", "H5", "H6", "H7", "H8", "H9", "H10", "H11", "H12", "H13", "H14", "H15", "H16","H17","H18","H19","H20","H21","H22","H23","H24","H25",
+            "H26","H27","H28","H29","H30","H31","H32","H33","H34","H35","H36","H37","H38","H39","H40","H41","H42","H43","H44","H45","H46","H47","H48","H49","H50","H51","H52","H53",
+            "H54","H55","H56","H57","H58","H59","H60"])
+
+            # ✅ Set correct resident_id to be included in payloads
+            self.apt_info_dropdown.currentTextChanged.connect(
+                lambda text: self.extra_fields.update({"resident_id": text})
+            )
+
+            apt_info_box.addWidget(apt_info_label)
+            apt_info_box.addWidget(self.apt_info_dropdown)
+
+            geom_layout.addLayout(apt_info_box)
+            layout.addLayout(geom_layout)
 
         input_layout = QHBoxLayout()
         self.input_box = QLineEdit()
@@ -119,23 +149,59 @@ class ChatTab(QWidget):
         self.setLayout(layout)
 
     def send_message(self):
-        user_text = self.input_box.text()
-        if not user_text:
-            return
-        self.chat_display.append(f"<b>You:</b> {user_text}")
-        payload = {
-            "question": user_text,
-            "conversation_history": self.conversation_history
-        }
-        payload.update(self.extra_fields)
+        if "geometry_suggestion" in self.endpoint:
+            resident_id = self.apt_info_dropdown.currentText()
 
-        self.send_btn.setEnabled(False)
-        self.worker = RequestWorker(self.endpoint, payload)
-        self.worker.finished.connect(self.handle_response)
-        self.worker.error.connect(self.handle_error)
-        self.worker.start()
+            try:
+                response = requests.post(
+                    "http://127.0.0.1:5000/geometry_suggestion",
+                    json={"resident_id": resident_id}
+                )
+                if response.status_code == 200:
+                    data = response.json()
+                    message = f"closest outdoor to '{data['resident_id']}' is '{data['outdoor_id']}', sent to grasshopper for visualization!"
+                else:
+                    message = f"Server Error: {response.status_code}: {response.text}"
+                    data = {}
+            except Exception as e:
+                message = f"Request failed: {str(e)}"
+                data = {}
+
+            #  Write to file for Grasshopper
+            try:
+                import json
+                with open("gh_message.txt", "w") as f:
+                    json.dump(data, f)
+            except Exception as e:
+                print(f"[ERROR writing to gh_message.txt]: {e}")
+
+            # Show result in UI
+            self.chat_display.append(f"<b>You:</b> {self.input_box.text()}")
+            self.chat_display.append(f"<b>Bot:</b> {message}")
+            self.input_box.clear()
+
+        else:
+            # Default logic for all other endpoints
+            user_text = self.input_box.text()
+            if not user_text:
+                return
+            self.chat_display.append(f"<b>You:</b> {user_text}")
+            payload = {
+                "question": user_text,
+                "conversation_history": self.conversation_history
+            }
+            payload.update(self.extra_fields)
+
+            self.send_btn.setEnabled(False)
+            self.worker = RequestWorker(self.endpoint, payload)
+            self.worker.finished.connect(self.handle_response)
+            self.worker.error.connect(self.handle_error)
+            self.worker.start()
+
+#edited for debugging
 
     def handle_response(self, data):
+        print("[DEBUG] Raw response data:", data)  #  This shows what the server returned
         answer = data.get("response", "No response")
         self.conversation_history = data.get("conversation_history", [])
         self.chat_display.append(f"<b>Bot:</b> {answer}")
