@@ -10,7 +10,7 @@ import time
 import requests
 
 # ============================================================================
-# GLOBAL CACHING SYSTEM (optimized reasoning)
+# GLOBAL CACHING SYSTEM (shared with optimized reasoning)
 # ============================================================================
 
 # Global cache for data to avoid reloading
@@ -106,7 +106,7 @@ def get_negotiation_data(key):
     return _negotiation_cache.get(key)
 
 # ============================================================================
-# DATA LOADING
+# OPTIMIZED DATA LOADING
 # ============================================================================
 
 def load_csvs():
@@ -128,7 +128,7 @@ def load_csvs():
     )
 
 # ============================================================================
-# CORE FUNCTIONS
+# OPTIMIZED CORE FUNCTIONS
 # ============================================================================
 
 @lru_cache(maxsize=64)
@@ -404,7 +404,86 @@ def analyze_convinceable_voters(space_id, current_activity, desired_activity, vo
     convinceable_residents.sort(key=lambda x: x["likely_to_convince"], reverse=True)
     print(f"DEBUG: Final result has {len(convinceable_residents)} convinceable residents")
     return convinceable_residents
+# def analyze_convinceable_voters(space_id, current_activity, desired_activity, voting=None):
+#     """
+#     Optimized version - only consider residents who have ANY vote for this space
+#     """
+#     if voting is None:
+#         voting = get_negotiation_data('voting')
+    
+#     # Ensure consistent formatting
+#     space_id_clean = str(space_id).strip().upper()
+#     voting = voting.copy()  # Don't modify cached data
+#     voting['space'] = voting['space'].astype(str).str.strip().str.upper()
+#     voting['resident'] = voting['resident'].astype(str).str.strip().str.upper()
+#     voting['activity'] = voting['activity'].astype(str).str.strip().str.title()
 
+#     # ONLY residents who have entries in voting_weights.csv for this specific space
+#     eligible_votes = voting[voting["space"] == space_id_clean].copy()
+#     if eligible_votes.empty:
+#         print(f"DEBUG: No entries found in voting_weights.csv for space '{space_id_clean}'")
+#         return []
+
+#     eligible_residents = eligible_votes['resident'].unique().tolist()
+
+#     # Activity group mapping
+#     activity_groups = {
+#         'sports': ['Sports', 'Playground', 'Community Pool/BBQ'],
+#         'social': ['Community Pool/BBQ', 'Outdoor Cinema/Event Space', 'Outdoor Meeting Space'],
+#         'relaxation': ['Sunbath', 'Offline Retreat', 'Healing Garden', 'Viewpoint'],
+#         'creative': ['Creative Corridor', 'Flexible Space'],
+#         'nature': ['Healing Garden', 'Urban Agriculture', 'Green Balcony', 'Biodiversity Balcony']
+#     }
+
+#     def get_activity_group(activity):
+#         for group, acts in activity_groups.items():
+#             if activity in acts:
+#                 return group
+#         return 'other'
+
+#     # Group residents by what they voted for in this space
+#     grouped = {}
+#     for resident in eligible_residents:
+#         resident_votes = eligible_votes[eligible_votes['resident'] == resident]
+#         voted_activities = resident_votes['activity'].unique().tolist()
+#         voted_groups = list(set(get_activity_group(act) for act in voted_activities))
+#         grouped[resident] = {
+#             "activities": voted_activities,
+#             "groups": voted_groups,
+#             "weights": resident_votes.set_index('activity')['weight'].to_dict()
+#         }
+
+#     # Prepare convinceable list - ONLY people who didn't vote for the desired activity
+#     convinceable_residents = []
+#     desired_group = get_activity_group(desired_activity.title())
+
+#     for resident, info in grouped.items():
+#         # If already voted for desired activity, skip
+#         if desired_activity.title() in info["activities"]:
+#             continue
+
+#         # Check if any of their voted groups matches desired group
+#         has_same_group = desired_group in info["groups"]
+
+#         if has_same_group:
+#             likely = True
+#             reason = f"voted for {', '.join(info['activities'])} - same group as {desired_activity}, likely interested"
+#         else:
+#             likely = False
+#             reason = f"voted for {', '.join(info['activities'])} - different from {desired_activity}, may prefer different activities"
+
+#         convinceable_residents.append({
+#             "resident": resident,
+#             "reason": reason,
+#             "likely_to_convince": likely,
+#             "weights": info["weights"],
+#             "voted_groups": info["groups"],
+#             "voted_activities": info["activities"]
+#         })
+
+#     # Sort by likelihood (most likely first)
+#     convinceable_residents.sort(key=lambda x: x["likely_to_convince"], reverse=True)
+#     return convinceable_residents
 
 def check_geometry_requirements(space_id, desired_activity, geometries=None, ml_activity_logic=None):
     """Optimized geometry requirement checking"""
@@ -481,294 +560,8 @@ def check_geometry_requirements(space_id, desired_activity, geometries=None, ml_
         "requirements": requirements.to_dict()
     }
 
-
-
-
-
-
-# Key fixes for runtime errors in negotiation functions
-
-def find_mutually_beneficial_swaps(user_id, desired_activity, user_current_info, spaces_with_desired, distances_all, voting, assignments):
-    """Find swaps based on voting relationships, not just physical distance - FIXED VERSION"""
-    swap_candidates = []
-    
-    # Add safety check for user_current_info
-    if not user_current_info or not isinstance(user_current_info, dict):
-        print(f"ERROR: Invalid user_current_info: {user_current_info}")
-        return swap_candidates
-    
-    user_best_access = user_current_info.get('best_access')
-    if not user_best_access:
-        print(f"ERROR: No best_access found for user {user_id}")
-        return swap_candidates
-    
-    user_offers_activity = user_best_access.get('activity')
-    user_offers_space = user_best_access.get('space_id')
-    
-    if not user_offers_activity or not user_offers_space:
-        print(f"ERROR: Missing activity or space for user {user_id}")
-        return swap_candidates
-    
-    # Add safety check for spaces_with_desired
-    if spaces_with_desired is None or spaces_with_desired.empty:
-        print(f"ERROR: No spaces found with desired activity {desired_activity}")
-        return swap_candidates
-    
-    # Limit to top 3 spaces for performance
-    for idx, space_row in spaces_with_desired.head(3).iterrows():
-        target_space = space_row.get('space_id')
-        if not target_space:
-            continue
-            
-        try:
-            # CORRECTED: Find residents who have VOTING ENTRIES for this target space
-            residents_with_access_to_target = voting[voting['space'] == target_space]['resident'].unique()
-            
-            print(f"DEBUG: Found {len(residents_with_access_to_target)} residents with access to {target_space}")
-            
-            for target_resident in residents_with_access_to_target:
-                if target_resident == user_id:
-                    continue
-                
-                try:
-                    # Get distances from voting data (which includes distance info)
-                    target_space_votes = voting[
-                        (voting['resident'] == target_resident) & 
-                        (voting['space'] == target_space)
-                    ]
-                    user_space_votes = voting[
-                        (voting['resident'] == target_resident) & 
-                        (voting['space'] == user_offers_space)
-                    ]
-                    
-                    if target_space_votes.empty:
-                        continue
-                        
-                    # Get distance to desired space from voting data
-                    distance_to_desired_space = target_space_votes['distance'].iloc[0]
-                    
-                    # Get distance to user's space (if this resident has access to it)
-                    if user_space_votes.empty:
-                        # If no voting entry, try to get distance from distances_all as fallback
-                        if target_resident not in distances_all['Source Node'].values:
-                            continue
-                        user_distance_row = distances_all[distances_all['Source Node'] == target_resident]
-                        if user_distance_row.empty or user_offers_space not in distances_all.columns:
-                            continue
-                        distance_to_user_space = float(user_distance_row.iloc[0][user_offers_space])
-                    else:
-                        distance_to_user_space = user_space_votes['distance'].iloc[0]
-                    
-                    # Skip if distances are too far (adjust thresholds as needed)
-                    if distance_to_desired_space > 50 or distance_to_user_space > 50:
-                        continue
-                    
-                    # Get this resident's preferences
-                    target_preferences = voting[voting['resident'] == target_resident]
-                    if target_preferences.empty:
-                        continue
-                    
-                    # Get their interest in user's activity
-                    their_interest_in_user_activity = target_preferences[
-                        target_preferences['activity'].str.lower() == user_offers_activity.lower()
-                    ]['weight'].sum()
-                    
-                    # Get user's preference for desired activity
-                    user_preferences = voting[voting['resident'] == user_id]
-                    user_desire_for_target = user_preferences[
-                        user_preferences['activity'].str.lower() == desired_activity.lower()
-                    ]['weight'].sum()
-                    
-                    # Calculate compatibility
-                    compatibility = calculate_swap_compatibility(
-                        distance_to_desired_space, distance_to_user_space,
-                        their_interest_in_user_activity, user_desire_for_target,
-                        target_preferences, user_preferences
-                    )
-                    
-                    if compatibility['score'] >= 3.0:  # Lowered threshold to get more options
-                        swap_candidates.append({
-                            'target_resident': target_resident,
-                            'target_space': target_space,
-                            'target_activity': desired_activity,
-                            'your_space': user_offers_space,
-                            'your_activity': user_offers_activity,
-                            'distance_to_desired': distance_to_desired_space,
-                            'distance_to_your_space': distance_to_user_space,
-                            'compatibility_score': compatibility['score'],
-                            'reasoning': compatibility['reasoning'],
-                            'their_interest_in_your_activity': their_interest_in_user_activity,
-                            'your_desire_for_target': user_desire_for_target
-                        })
-                        
-                except (ValueError, TypeError, KeyError) as e:
-                    print(f"DEBUG: Error processing {target_resident}: {e}")
-                    continue
-                    
-        except Exception as e:
-            print(f"ERROR: Error processing space {target_space}: {e}")
-            continue
-    
-    print(f"DEBUG: Found {len(swap_candidates)} total swap candidates")
-    return swap_candidates
-
-def analyze_user_current_access(user_id, distances_all=None, assignments=None, voting=None):
-    """Optimized user access analysis - FIXED VERSION"""
-    if distances_all is None:
-        distances_all = get_negotiation_data('distances_all')
-    if assignments is None:
-        assignments = get_negotiation_data('assignments')
-    if voting is None:
-        voting = get_negotiation_data('voting')
-    
-    # Safety checks
-    if distances_all is None or distances_all.empty:
-        print(f"ERROR: No distances_all data available")
-        return None
-        
-    if assignments is None or assignments.empty:
-        print(f"ERROR: No assignments data available")
-        return None
-        
-    if voting is None or voting.empty:
-        print(f"ERROR: No voting data available")
-        return None
-    
-    # Use cached lookup for user distances
-    user_distances = get_user_distances(user_id)
-    if user_distances is None:
-        print(f"ERROR: Could not find distances for user {user_id}")
-        return None
-    
-    # Get distances to all outdoor spaces (columns starting with 'O') - optimized
-    space_distances = []
-    for col in distances_all.columns:
-        if col.startswith('O') and col != 'Source Node':
-            try:
-                dist = float(user_distances[col])
-                space_distances.append((col, dist))
-            except (ValueError, TypeError, KeyError):
-                continue
-    
-    if not space_distances:
-        print(f"ERROR: No valid space distances found for user {user_id}")
-        return None
-    
-    # Sort by distance and get closest spaces
-    space_distances.sort(key=lambda x: x[1])
-    closest_spaces = space_distances[:3]  # Top 3 closest
-    
-    # Get activities and preferences efficiently
-    user_access_info = []
-    for space_id, distance in closest_spaces:
-        try:
-            # Get assigned activity using cached lookup
-            assigned_activity = get_space_assignment(space_id)
-            if assigned_activity is None:
-                assigned_activity = "Unknown"
-            
-            # Get user's preference weight for this activity
-            user_vote = voting[
-                (voting['resident'] == user_id) & 
-                (voting['activity'].str.lower() == assigned_activity.lower())
-            ]
-            preference_weight = user_vote['weight'].sum() if not user_vote.empty else 0
-            
-            user_access_info.append({
-                'space_id': space_id,
-                'activity': assigned_activity,
-                'distance': distance,
-                'preference_weight': preference_weight,
-                'satisfaction_score': calculate_satisfaction_score(distance, preference_weight)
-            })
-        except Exception as e:
-            print(f"ERROR: Error processing space {space_id}: {e}")
-            continue
-    
-    if not user_access_info:
-        print(f"ERROR: No valid access info found for user {user_id}")
-        return None
-    
-    return {
-        'user_id': user_id,
-        'closest_spaces': user_access_info,
-        'best_access': max(user_access_info, key=lambda x: x['satisfaction_score']) if user_access_info else None
-    }
-
-def handle_apartment_swap(params):
-    """Optimized apartment swap handling - FIXED VERSION"""
-    user_id = params.get("user_id")
-    desired_activity = params.get("desired_activity")
-    
-    if not user_id or not desired_activity:
-        return {"error": "Missing user_id or desired_activity for swap"}
-    
-    try:
-        # Get cached data
-        distances_all = get_negotiation_data('distances_all')
-        assignments = get_negotiation_data('assignments')
-        voting = get_negotiation_data('voting')
-        
-        # Safety checks
-        if not all([distances_all is not None, assignments is not None, voting is not None]):
-            return {"error": "Required data not available. Please check data loading."}
-        
-        # Step 1: Find what the requesting user currently has access to
-        user_current_info = analyze_user_current_access(user_id, distances_all, assignments, voting)
-        if not user_current_info:
-            return {"error": f"Could not determine current access for user {user_id}"}
-        
-        # Step 2: Find spaces with desired activity
-        spaces_with_desired = assignments[
-            assignments['assigned_activity'].str.lower() == desired_activity.lower()
-        ]
-        if spaces_with_desired.empty:
-            return {
-                "result": f"No spaces currently assigned to {desired_activity}. Consider negotiating for activity change instead."
-            }
-        
-        # Step 3: Find mutually beneficial swaps
-        swap_candidates = find_mutually_beneficial_swaps(
-            user_id, desired_activity, user_current_info, 
-            spaces_with_desired, distances_all, voting, assignments
-        )
-        
-        # Step 4: Rank and format results
-        if swap_candidates:
-            # Sort by compatibility score (higher is better)
-            swap_candidates.sort(key=lambda x: x['compatibility_score'], reverse=True)
-            
-            result = f"Smart apartment swaps found for {desired_activity}:\n\n"
-            
-            for i, candidate in enumerate(swap_candidates[:5], 1): # Top 5
-                result += f"**Option {i}: Swap with {candidate['target_resident']}**\n"
-                result += f"✓ You get: Access to {candidate['target_space']} ({desired_activity}) - {candidate['distance_to_desired']:.1f}m away\n"
-                result += f"✓ They get: Access to {candidate['your_space']} ({candidate['your_activity']}) - {candidate['distance_to_your_space']:.1f}m away\n"
-                result += f"📊 Compatibility: {candidate['compatibility_score']:.1f}/10\n"
-                result += f"💡 Why it works: {candidate['reasoning']}\n\n"
-            
-            result += "Type the number of your preferred option to proceed with that swap."
-            
-            return {
-                "result": result, 
-                "swap_candidates": swap_candidates[:5],
-                "user_current_info": user_current_info
-            }
-        else:
-            # Provide alternative suggestions
-            alternatives = suggest_alternatives(user_id, desired_activity, user_current_info, assignments, voting)
-            return {
-                "result": f"No mutually beneficial swaps found for {desired_activity}.\n\n{alternatives}"
-            }
-            
-    except Exception as e:
-        print(f"ERROR in handle_apartment_swap: {e}")
-        import traceback
-        traceback.print_exc()
-        return {"error": f"Error processing apartment swap: {str(e)}"}
-
 def propose_activity_change(params):
-    """Enhanced activity change proposal - FIXED VERSION"""
+    """Enhanced activity change proposal with conversational LLM analysis"""
     user_id = params.get("user_id")
     space_id = params.get("space_id")
     desired = params.get("desired_activity")
@@ -777,63 +570,49 @@ def propose_activity_change(params):
     if not user_id or not desired or not current or not space_id:
         return {"error": "Missing user_id, space_id, desired_activity, or current_activity."}
     
-    try:
-        # Clean up activity names
-        def clean_activity_name(name):
-            if not name:
-                return ""
-            name = name.strip()
-            if name.lower().startswith("for "):
-                name = name[4:]
-            return name.strip().title()
-        
-        desired_clean = clean_activity_name(desired)
-        current_clean = clean_activity_name(current)
-        
-        # Get cached data with safety checks
-        voting = get_negotiation_data('voting')
-        geometries = get_negotiation_data('geometries')
-        thresh = get_negotiation_data('thresh')
-        ml_activity_logic = get_negotiation_data('ml_activity_logic')
-        
-        if voting is None or voting.empty:
-            return {"error": "Voting data not available"}
-        
-        # Analyze voting efficiently
-        current_voters = voting[
-            (voting["space"] == space_id) & 
-            (voting["activity"].str.strip().str.title() == current_clean)
-        ]
-        desired_voters = voting[
-            (voting["space"] == space_id) & 
-            (voting["activity"].str.strip().str.title() == desired_clean)
-        ]
-        current_residents = set(current_voters["resident"])
-        desired_residents = set(desired_voters["resident"])
-        overlap = current_residents & desired_residents
+    # Clean up activity names
+    def clean_activity_name(name):
+        if not name:
+            return ""
+        name = name.strip()
+        if name.lower().startswith("for "):
+            name = name[4:]
+        return name.strip().title()
+    
+    desired_clean = clean_activity_name(desired)
+    current_clean = clean_activity_name(current)
+    
+    # Get cached data
+    voting = get_negotiation_data('voting')
+    geometries = get_negotiation_data('geometries')
+    thresh = get_negotiation_data('thresh')
+    ml_activity_logic = get_negotiation_data('ml_activity_logic')
+    
+    # Analyze voting efficiently
+    current_voters = voting[(voting["space"] == space_id) & (voting["activity"].str.strip().str.title() == current_clean)]
+    desired_voters = voting[(voting["space"] == space_id) & (voting["activity"].str.strip().str.title() == desired_clean)]
+    current_residents = set(current_voters["resident"])
+    desired_residents = set(desired_voters["resident"])
+    overlap = current_residents & desired_residents
 
-        # Geometry checks
-        geometry_warning = ""
-        geometry_changes = {}
-        current_geometry = {}
-        
-        if thresh is not None and not thresh.empty:
-            space_thresh = thresh[thresh["id"] == space_id]
-            if not space_thresh.empty:
-                current_activities = str(space_thresh.iloc[0]["predicted_activities"]).lower()
-                if desired_clean.lower() not in current_activities:
-                    geometry_warning = f"Warning: {desired_clean} is not in predicted activities for {space_id}. Current predicted activities: {current_activities}."
-                    
-                    if geometries is not None and ml_activity_logic is not None:
-                        geom_check = check_geometry_requirements(space_id, desired_clean, geometries, ml_activity_logic)
-                        if "error" not in geom_check and geom_check.get("changes_needed"):
-                            geometry_changes = geom_check["changes_needed"]
-                            current_geometry = geom_check["current_geometry"]
-                        elif "error" in geom_check:
-                            geometry_warning += f" Could not check geometry requirements: {geom_check['error']}"
+    # Geometry checks
+    space_thresh = thresh[thresh["id"] == space_id]
+    geometry_warning = ""
+    geometry_changes = {}
+    current_geometry = {}
+    if not space_thresh.empty:
+        current_activities = str(space_thresh.iloc[0]["predicted_activities"]).lower()
+        if desired_clean.lower() not in current_activities:
+            geometry_warning = f"Warning: {desired_clean} is not in predicted activities for {space_id}. Current predicted activities: {current_activities}."
+            geom_check = check_geometry_requirements(space_id, desired_clean, geometries, ml_activity_logic)
+            if "error" not in geom_check and geom_check["changes_needed"]:
+                geometry_changes = geom_check["changes_needed"]
+                current_geometry = geom_check["current_geometry"]
+            elif "error" in geom_check:
+                geometry_warning += f" Could not check geometry requirements: {geom_check['error']}"
 
-        # Compose LLM prompt
-        prompt = f"""
+    # Compose LLM prompt
+    prompt = f"""
 A resident has made a negotiation request.
 
 User request: Change {space_id} from {current_clean} to {desired_clean}.
@@ -849,59 +628,40 @@ Current geometry: {current_geometry if current_geometry else 'N/A'}
 Please analyze the situation, explain if and why the change is possible, what negotiations or agreements might be needed, and summarize the next steps in a friendly, conversational way. If there are any concerns or recommendations, mention them.
 """
 
-        messages = [
-            {"role": "system", "content": "You are a helpful, friendly community assistant who helps residents negotiate space usage and activities in their building. Use the facts provided and do not make up numbers."},
-            {"role": "user", "content": prompt}
-        ]
+    messages = [
+        {"role": "system", "content": "You are a helpful, friendly community assistant who helps residents negotiate space usage and activities in their building. Use the facts provided and do not make up numbers."},
+        {"role": "user", "content": prompt}
+    ]
 
-        try:
-            response = requests.post(
-                "http://localhost:1234/v1/chat/completions",
-                headers={"Content-Type": "application/json"},
-                json={
-                    "model": "local-model",
-                    "messages": messages,
-                    "temperature": 0.7,
-                    "max_tokens": 400
-                },
-                timeout=15
-            )
-            if response.status_code == 200:
-                llm_reply = response.json()["choices"][0]["message"]["content"]
-            else:
-                llm_reply = "Sorry, I couldn't generate a conversational analysis at this time."
-        except Exception as e:
-            llm_reply = f"Analysis: Change request from {current_clean} to {desired_clean} in {space_id}. Residents overlap: {len(overlap)}. Please review manually."
-
-        return {
-            "result": llm_reply,
-            "can_proceed": bool(overlap or geometry_changes),
-            "geometry_changes_needed": bool(geometry_changes),
-            "geometry_changes": geometry_changes,
-            "current_geometry": current_geometry,
-            "space_id": space_id,
-            "desired_activity": desired_clean,
-            "params": params
-        }
-        
+    try:
+        response = requests.post(
+            "http://localhost:1234/v1/chat/completions",
+            headers={"Content-Type": "application/json"},
+            json={
+                "model": "local-model",
+                "messages": messages,
+                "temperature": 0.7,
+                "max_tokens": 400
+            },
+            timeout=15
+        )
+        if response.status_code == 200:
+            llm_reply = response.json()["choices"][0]["message"]["content"]
+        else:
+            llm_reply = "Sorry, I couldn't generate a conversational analysis at this time."
     except Exception as e:
-        print(f"ERROR in propose_activity_change: {e}")
-        import traceback
-        traceback.print_exc()
-        return {"error": f"Error processing activity change: {str(e)}"}
+        llm_reply = f"Sorry, there was an error generating the analysis: {e}"
 
-
-
-
-
-
-
-
-
-
-
-
-
+    return {
+        "result": llm_reply,
+        "can_proceed": bool(overlap or geometry_changes),
+        "geometry_changes_needed": bool(geometry_changes),
+        "geometry_changes": geometry_changes,
+        "current_geometry": current_geometry,
+        "space_id": space_id,
+        "desired_activity": desired_clean,
+        "params": params
+    }
 
 
 
@@ -970,9 +730,8 @@ def calculate_satisfaction_score(distance, preference_weight):
     # Combined score (weighted average)
     return (distance_score * 0.6) + (preference_score * 0.4)
 
-
 def find_mutually_beneficial_swaps(user_id, desired_activity, user_current_info, spaces_with_desired, distances_all, voting, assignments):
-    """Find swaps based on voting relationships, not just physical distance"""
+    """Optimized swap finding with early exits"""
     swap_candidates = []
     user_best_access = user_current_info['best_access']
     
@@ -986,48 +745,44 @@ def find_mutually_beneficial_swaps(user_id, desired_activity, user_current_info,
     for _, space_row in spaces_with_desired.head(3).iterrows():
         target_space = space_row['space_id']
         
-        # CORRECTED: Find residents who have VOTING ENTRIES for this target space
-        # This shows actual apartment-space associations, not just physical proximity
-        residents_with_access_to_target = voting[voting['space'] == target_space]['resident'].unique()
-        
-        print(f"DEBUG: Found {len(residents_with_access_to_target)} residents with access to {target_space}: {residents_with_access_to_target}")
-        
-        for target_resident in residents_with_access_to_target:
-            # Skip the requesting user
-            if target_resident == user_id:
-                continue
+        # Find residents close to this space
+        space_distances = distances_all[distances_all['Source Node'] == target_space]
+        if space_distances.empty:
+            continue
             
-            try:
-                # Get distances from voting data (which includes distance info)
-                target_space_votes = voting[(voting['resident'] == target_resident) & (voting['space'] == target_space)]
-                user_space_votes = voting[(voting['resident'] == target_resident) & (voting['space'] == user_offers_space)]
+        space_dist_row = space_distances.iloc[0]
+        
+        # Check each resident near this space (with performance limits)
+        resident_count = 0
+        for col in distances_all.columns:
+            if not col.startswith('H') or col == user_id:
+                continue
                 
-                if target_space_votes.empty:
+            resident_count += 1
+            if resident_count > 10:  # Limit to first 10 residents for performance
+                break
+                
+            try:
+                target_resident = col
+                distance_to_desired_space = float(space_dist_row[col])
+                
+                # Skip if too far from desired space
+                if distance_to_desired_space > 50:  # 50m threshold
+                    continue
+                
+                # Get this resident's distance to user's best space
+                user_space_distances = distances_all[distances_all['Source Node'] == user_offers_space]
+                if user_space_distances.empty:
                     continue
                     
-                # Get distance to desired space from voting data
-                distance_to_desired_space = target_space_votes['distance'].iloc[0]
+                distance_to_user_space = float(user_space_distances.iloc[0][target_resident])
                 
-                # Get distance to user's space (if this resident has access to it)
-                if user_space_votes.empty:
-                    # If no voting entry, try to get distance from distances_all as fallback
-                    user_distance_row = distances_all[distances_all['Source Node'] == target_resident]
-                    if user_distance_row.empty or user_offers_space not in distances_all.columns:
-                        continue
-                    distance_to_user_space = float(user_distance_row.iloc[0][user_offers_space])
-                else:
-                    distance_to_user_space = user_space_votes['distance'].iloc[0]
-                
-                # Skip if distances are too far (adjust thresholds as needed)
-                if distance_to_desired_space > 50 or distance_to_user_space > 50:
-                    continue
-                
-                # Get this resident's preferences
+                # Check if this resident wants what the user has
                 target_preferences = voting[voting['resident'] == target_resident]
                 if target_preferences.empty:
                     continue
                 
-                # Get their interest in user's activity
+                # Get their preference for user's activity
                 their_interest_in_user_activity = target_preferences[
                     target_preferences['activity'].str.lower() == user_offers_activity.lower()
                 ]['weight'].sum()
@@ -1045,7 +800,7 @@ def find_mutually_beneficial_swaps(user_id, desired_activity, user_current_info,
                     target_preferences, user_preferences
                 )
                 
-                if compatibility['score'] >= 3.0:  # Lowered threshold to get more options
+                if compatibility['score'] >= 5.0:  # Minimum threshold
                     swap_candidates.append({
                         'target_resident': target_resident,
                         'target_space': target_space,
@@ -1060,21 +815,10 @@ def find_mutually_beneficial_swaps(user_id, desired_activity, user_current_info,
                         'your_desire_for_target': user_desire_for_target
                     })
                     
-            except (ValueError, TypeError, KeyError) as e:
-                print(f"DEBUG: Error processing {target_resident}: {e}")
+            except (ValueError, TypeError, KeyError):
                 continue
     
-    print(f"DEBUG: Found {len(swap_candidates)} total swap candidates")
     return swap_candidates
-
-
-
-
-
-
-
-
-
 
 def calculate_swap_compatibility(dist_to_desired, dist_to_user_space, their_interest, user_desire, target_prefs, user_prefs):
     """Optimized compatibility calculation"""
@@ -1241,7 +985,7 @@ def handle_booking_request(params):
     }
 
     # ============================================================================
-    # GEOMETRY FUNCTIONS
+    # GEOMETRY FUNCTIONS (OPTIMIZED)
     # ============================================================================
 
     def change_geometry(params):
@@ -1517,7 +1261,7 @@ def handle_booking_request(params):
         return "\n".join(impact_points)
 
 # ============================================================================
-# UTILITY FUNCTIONS
+# UTILITY FUNCTIONS (OPTIMIZED)
 # ============================================================================
 
 # @lru_cache(maxsize=32)
@@ -1663,7 +1407,7 @@ def get_spaces_with_assigned_activity(activity_name, assignments_path="llm_reaso
     return filtered['space_id'].tolist()
 
 # ============================================================================
-# ACTION ROUTING
+# ACTION ROUTING (OPTIMIZED)
 # ============================================================================
 
 # ACTIONS DICTIONARY
@@ -1878,7 +1622,7 @@ def negotiation_flow(user_query, user_id=None, last_context=None):
     # Try all reasonable patterns
     patterns = [
         r"assign ([A-Za-z0-9_\- ]+) to (O\d+)",
-        r"i would like to assign ([A-Za-z0-9_\- ]+) to (O\d+)",
+r"i would like to assign ([A-Za-z0-9_\- ]+) to (O\d+)",
         r"i want ([A-Za-z0-9_\- ]+) in (O\d+)",
         r"i would like (O\d+) (?:to be|to be for|for|to have|as|to) ([A-Za-z0-9_\- ]+)",
         r"i want (O\d+) (?:for|as) ([A-Za-z0-9_\- ]+)",
